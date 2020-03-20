@@ -923,7 +923,7 @@ double compile_program(char *id, char *filename)
 	isthread = is_thread(qname);
 
 	sprintf(tmp_f, "%s/%s/%s", ansDir, qname, filename);
-	sprintf(tmp_e, "%s/%s/%s.exe", ansDir, qname, qname);
+	sprintf(tmp_e, "%s/%s.exe", ansDir, qname);
 
 	// 컴파일 명령어 세팅
 	if(tOption && isthread)
