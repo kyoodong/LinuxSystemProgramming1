@@ -785,7 +785,7 @@ int score_blank(char *id, char *filename)
 	idx = 0;
 	std_root = make_tree(std_root, tokens, &idx, 0);
 
-	sprintf(tmp, "%s/%s/%s", ansDir, qname, filename);
+	sprintf(tmp, "%s/%s", ansDir, filename);
 	fd_ans = open(tmp, O_RDONLY);
 
 	// 여러 개의 답안 중 하나만 맞아도 되는 경우로 인해 while 문 돌며 하나라도 일치할 시 정답 처리
