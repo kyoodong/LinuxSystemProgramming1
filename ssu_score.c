@@ -795,6 +795,7 @@ int score_blank(char *id, char *filename)
 	sprintf(tmp, "%s/%s/%s", ansDir, qname, filename);
 	fd_ans = open(tmp, O_RDONLY);
 
+    // 여러 개의 답안 중 하나만 맞아도 되는 경우로 인해 while 문 돌며 하나라도 일치할 시 정답 처리
 	while(1)
 	{
 		ans_root = NULL;
@@ -823,14 +824,18 @@ int score_blank(char *id, char *filename)
 				a_answer[strlen(a_answer) - 1] = '\0';
 		}
 
+        // 정답 답안 파일의 토큰을 만들고
 		if(!make_tokens(a_answer, tokens))
 			continue;
 
+        // 트리를 만들어서
 		idx = 0;
 		ans_root = make_tree(ans_root, tokens, &idx, 0);
 
+        // 학생 답안과 정답 답안을 비교
 		compare_tree(std_root, ans_root, &result);
 
+        // 일치한다면 정답 처리
 		if(result == true){
 			close(fd_std);
 			close(fd_ans);
@@ -840,10 +845,10 @@ int score_blank(char *id, char *filename)
 			if(ans_root != NULL)
 				free_node(ans_root);
 			return true;
-
 		}
 	}
 	
+    // 어떠한 정답 답안과도 일치하지 않는다면 오답 처리
 	close(fd_std);
 	close(fd_ans);
 

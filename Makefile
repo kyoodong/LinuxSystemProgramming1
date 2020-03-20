@@ -25,4 +25,3 @@ blank_debug.o : blank.c blank.h
 clean :
 	rm *.o
 	rm ssu_score
-
