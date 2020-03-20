@@ -14,6 +14,7 @@ char datatype[DATATYPE_SIZE][MINLEN] = {"int", "char", "double", "float", "long"
 			, "rlim_t", "jmp_buf", "sig_atomic_t", "clock_t", "struct"};
 
 
+// 연산자와 그 우선순위를 표현함 (수가 낮으면 낮을 수록 우선순위가 높은 것임)
 operator_precedence operators[OPERATOR_CNT] = {
 	{"(", 0}, {")", 0}
 	,{"->", 1}	
@@ -693,25 +694,27 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
  트리를 만들어주는 함수
  @param root 만들어진 트리의 루트가 저장될 공간
  @param tokens 토큰 테이블
- @param idx
- @param parentheses
- @return 
+ @param idx 토큰 인덱스
+ @param parentheses 괄호 depth
+ @return 만들어진 트리의 루트 노드
  */
 node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 {
 	node *cur = root;
 	node *new;
-	node *saved_operator;
 	node *operator;
 	int fstart;
 	int i;
 
 	while(1)
 	{
-        // 더 이상 처리할 토큰이 없으면 반복문 종료
+		// 더 이상 처리할 토큰이 없으면 반복문 종료
 		if(strcmp(tokens[*idx], "") == 0)
 			break;
 	
+		// 괄호 닫기를 만나면 바로 리턴
+		// 왜냐면 괄호 열기를 만나는 순간에 make_tree가 재귀적으로 호출되어 하나의 서브트리가 만들어지는 과정이였기에
+		// 여기서 리턴되는 루트 노드는 서브 트리의 루트노드임
 		if(!strcmp(tokens[*idx], ")"))
 			return get_root(cur);
 
