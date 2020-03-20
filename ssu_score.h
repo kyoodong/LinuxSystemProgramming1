@@ -29,7 +29,7 @@
 	#define ERROR 0
 #endif
 
-#define FILELEN 64
+#define FILELEN 512
 #define BUFLEN 1024
 #define SNUM 100
 #define QNUM 100

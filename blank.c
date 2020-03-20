@@ -29,11 +29,18 @@ operator_precedence operators[OPERATOR_CNT] = {
 	,{"=", 14}	,{"+=", 14}	,{"-=", 14}	,{"&=", 14}	,{"|=", 14}
 };
 
+/**
+ 두 트리가 같은 결과를 내는지 확인하는 함수
+ @param root1 트리 루트 노드
+ @param root2 트리 루트 노드
+ @param result true : 같음
+                false : 다름
+ */
 void compare_tree(node *root1,  node *root2, int *result)
 {
 	node *tmp;
-	int cnt1, cnt2;
 
+    // 둘 중 하나라도 NULL이면 false
 	if(root1 == NULL || root2 == NULL){
 		*result = false;
 		return;
@@ -58,11 +65,13 @@ void compare_tree(node *root1,  node *root2, int *result)
 		}
 	}
 
+    // 두 root의 이름이 다르면 false
 	if(strcmp(root1->name, root2->name) != 0){
 		*result = false;
 		return;
 	}
 
+    // 한쪽만 자식 노드가 있는 경우 false
 	if((root1->child_head != NULL && root2->child_head == NULL)
 		|| (root1->child_head == NULL && root2->child_head != NULL)){
 		*result = false;
@@ -70,6 +79,7 @@ void compare_tree(node *root1,  node *root2, int *result)
 	}
 
 	else if(root1->child_head != NULL){
+        // 두 자식 노드의 형제 노드의 수가 다르면 false
 		if(get_sibling_cnt(root1->child_head) != get_sibling_cnt(root2->child_head)){
 			*result = false;
 			return;
@@ -113,10 +123,11 @@ void compare_tree(node *root1,  node *root2, int *result)
 				}
 			}
 		}
+        // ==, !=, +, *, ||, |, &&, & 이외의 문자
 		else{
 			compare_tree(root1->child_head, root2->child_head, result);
 		}
-	}	
+	}
 
 
 	if(root1->next != NULL){
@@ -754,7 +765,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 				if(cur == NULL)
 					cur = new;
 
-                // 현재 노드와 새로운 노드가 이름이 다른 상황
+                // 현재 노드와 새로운 노드가 이름이 같은 상황
 				else if(!strcmp(new->name, cur->name)){
 					if(!strcmp(new->name, "|") || !strcmp(new->name, "||") 
 						|| !strcmp(new->name, "&") || !strcmp(new->name, "&&"))
@@ -963,6 +974,12 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 	return get_root(cur);
 }
 
+/**
+ 형제를 바꿔주는 함수
+ @param parent 노드
+ @return parent
+ 자식 노드를 원래 자식노드의 next로 지정하고 기존 자식노드는 새로운 자식노드의 next가 됨
+ */
 node *change_sibling(node *parent)
 {
 	node *tmp;
@@ -1057,6 +1074,11 @@ void print(node *cur)
 	printf("%s", cur->name);
 }
 
+/**
+ 상위 연산자를 찾아주는 함수
+ @param cur 노드
+ @return 연산자 노드
+ */
 node *get_operator(node *cur)
 {
 	if(cur == NULL)
@@ -1090,9 +1112,9 @@ node *get_root(node *cur)
 }
 
 /**
- cur 보다 같거나 상위 노드 중에서 new 보다 우선순위가 높은 연산자 노드를 찾아주는 함수
- @param cur
- @param new
+ 기존 부모 노드와 새로운 부모 노드 후보 중 우선순위가 높은 노드를 뽑아줌
+ @param cur 기존 부모 노드
+ @param new 새로운 부모 노드 후보
  @return
  */
 node *get_high_precedence_node(node *cur, node *new)
@@ -1187,6 +1209,11 @@ node *get_last_child(node *cur)
 	return cur;
 }
 
+/**
+ 형제 노드의 갯수를 세어주는 함수
+ @param cur 노드
+ @return cur의 형제노드의 갯수
+ */
 int get_sibling_cnt(node *cur)
 {
 	int i = 0;
