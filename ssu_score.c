@@ -48,7 +48,7 @@ void ssu_score(int argc, char *argv[])
 	memset(saved_path, 0, BUFLEN);
 	
 	// -c 옵션이 아니면 stuDir, ansDir 을 설정
-	// -c 옵션이 뭐지??
+	// @TODO: -c 옵션이 뭐지??
 	if(argc >= 3 && strcmp(argv[1], "-c") != 0){
 		strcpy(stuDir, argv[1]);
 		strcpy(ansDir, argv[2]);
@@ -99,6 +99,8 @@ void ssu_score(int argc, char *argv[])
 	printf("grading student's test papers..\n");
 	score_students();
 
+	// c옵션은 명세에 없는듯함
+	// @TODO: 지우자
 	if(cOption)
 		do_cOption(cIDs);
 
@@ -141,6 +143,7 @@ int check_option(int argc, char *argv[])
 				i = optind;
 				j = 0;
 
+				// 스레드 관련 문제의 경우 미리 문제 번호를 threadFiles에 저장해둠
 				while(i < argc && argv[i][0] != '-'){
 					// ARGNUM개 문제 지정 가능
 					if(j >= ARGNUM)
@@ -860,11 +863,18 @@ int score_blank(char *id, char *filename)
 	return false;
 }
 
+/**
+ 프로그램 문제를 채점하는 프로그램
+ @param id 학생 아이디
+ @param filename 문제 이름
+ @return
+ */
 double score_program(char *id, char *filename)
 {
 	double compile;
 	int result;
 
+	// 프로그램 컴파일
 	compile = compile_program(id, filename);
 
 	if(compile == ERROR || compile == false)
@@ -881,6 +891,12 @@ double score_program(char *id, char *filename)
 	return true;
 }
 
+/**
+ 스레드로 동작시켜야하는 문제인지 확인해주는 함수
+ @param qname 문제 이름
+ @return 1 스레드로 동작시켜야 하는 문제인 경우
+		 0 스레드로 동작시키지 않아도 되는 문제인 경우
+ */
 int is_thread(char *qname)
 {
 	int i;
@@ -893,6 +909,14 @@ int is_thread(char *qname)
 	return false;
 }
 
+/**
+ 프로그램을 컴파일해주는 함수
+ @param id 학생 아이디
+ @param filename 문제 이름
+ @return 0 오류
+		 ERROR 컴파일 에러
+		 n warning 갯수
+ */
 double compile_program(char *id, char *filename)
 {
 	int fd;
@@ -903,33 +927,44 @@ double compile_program(char *id, char *filename)
 	off_t size;
 	double result;
 
+	// .c를 제외한 파일명 복사
 	memset(qname, 0, sizeof(qname));
 	memcpy(qname, filename, strlen(filename) - strlen(strrchr(filename, '.')));
 	
+	// 스레드로 동작시켜야하는 문제인지 확인
 	isthread = is_thread(qname);
 
 	sprintf(tmp_f, "%s/%s/%s", ansDir, qname, filename);
 	sprintf(tmp_e, "%s/%s/%s.exe", ansDir, qname, qname);
 
+	// 컴파일 명령어 세팅
 	if(tOption && isthread)
 		sprintf(command, "gcc -o %s %s -lpthread", tmp_e, tmp_f);
 	else
 		sprintf(command, "gcc -o %s %s", tmp_e, tmp_f);
 
+	// 에러 출력 파일 세팅
 	sprintf(tmp_e, "%s/%s/%s_error.txt", ansDir, qname, qname);
 	fd = creat(tmp_e, 0666);
 
+	// 명령어 실행 (이 동안은 fd가 표준 에러 파일이 됨)
 	redirection(command, fd, STDERR);
 	size = lseek(fd, 0, SEEK_END);
 	close(fd);
+	// unlink : 파일을 삭제한다
+	// 정확히는 link를 1 줄어들게 하는 효과를 가지며 줄어든 link가 0이라면 파일을 삭제한다.
 	unlink(tmp_e);
 
+	// 컴파일 중 에러가 발생한 경우
+	// @TODO: warning 처리는?
+	// 정답 답안 파일 하는거라 워닝조차 발생하면 안됨
 	if(size > 0)
 		return false;
 
 	sprintf(tmp_f, "%s/%s/%s", stuDir, id, filename);
 	sprintf(tmp_e, "%s/%s/%s.stdexe", stuDir, id, qname);
 
+	// 스레드 생성과 관련된 문제의 경우 lpthread 옵션을 주어야함
 	if(tOption && isthread)
 		sprintf(command, "gcc -o %s %s -lpthread", tmp_e, tmp_f);
 	else
@@ -943,6 +978,7 @@ double compile_program(char *id, char *filename)
 	close(fd);
 
 	if(size > 0){
+		// 문제번호_error.txt에 에러를 출력해주는 옵션
 		if(eOption)
 		{
 			sprintf(tmp_e, "%s/%s", errorDir, id);
@@ -954,7 +990,7 @@ double compile_program(char *id, char *filename)
 
 			result = check_error_warning(tmp_e);
 		}
-		else{ 
+		else{
 			result = check_error_warning(tmp_f);
 			unlink(tmp_f);
 		}
@@ -966,6 +1002,13 @@ double compile_program(char *id, char *filename)
 	return true;
 }
 
+/**
+ 에러 파일에 warning이 있는지 확인해주는 함수
+ @param filename 에러 로그 파일
+ @return ERROR : 에러가 하나라도 있는 경우
+		 n : warning의 갯수
+ @TODO: 왜 리턴이 double인가
+ */
 double check_error_warning(char *filename)
 {
 	FILE *fp;
@@ -987,6 +1030,12 @@ double check_error_warning(char *filename)
 	return warning;
 }
 
+/**
+ 프로그램 실행
+ @param id 학생 아이디
+ @param filename 문제 이름
+ @return
+ */
 int execute_program(char *id, char *filename)
 {
 	char std_fname[BUFLEN], ans_fname[BUFLEN];
@@ -996,21 +1045,27 @@ int execute_program(char *id, char *filename)
 	pid_t pid;
 	int fd;
 
+	// .c를 제외한 파일명 복사
 	memset(qname, 0, sizeof(qname));
 	memcpy(qname, filename, strlen(filename) - strlen(strrchr(filename, '.')));
 
+	// 정답 파일 실행
+	// 표준 출력 파일 생성
 	sprintf(ans_fname, "%s/%s/%s.stdout", ansDir, qname, qname);
 	fd = creat(ans_fname, 0666);
 
+	// 정답 프로그램 실행
 	sprintf(tmp, "%s/%s/%s.exe", ansDir, qname, qname);
 	redirection(tmp, fd, STDOUT);
 	close(fd);
 
+	// 학생 파일 실행
+	// 표준 출력 파일 생성
 	sprintf(std_fname, "%s/%s/%s.stdout", stuDir, id, qname);
 	fd = creat(std_fname, 0666);
 
+	// 학생 프로그램 실행
 	sprintf(tmp, "%s/%s/%s.stdexe &", stuDir, id, qname);
-
 	start = time(NULL);
 	redirection(tmp, fd, STDOUT);
 	
@@ -1018,6 +1073,7 @@ int execute_program(char *id, char *filename)
 	while((pid = inBackground(tmp)) > 0){
 		end = time(NULL);
 
+		// 실행 시간이 5초를 넘어가면 오답 처리
 		if(difftime(end, start) > OVER){
 			kill(pid, SIGKILL);
 			close(fd);
@@ -1027,32 +1083,41 @@ int execute_program(char *id, char *filename)
 
 	close(fd);
 
+	// 두 결과 파일이 같은지 확인한다.
 	return compare_resultfile(std_fname, ans_fname);
 }
 
+/**
+ process id 를 구해주는 함수
+ @param name 실행 중인 프로그램 이름
+ @return 0 process id 를 찾는데 실패함
+		 pid 성공
+ */
 pid_t inBackground(char *name)
 {
 	pid_t pid;
 	char command[64];
 	char tmp[64];
 	int fd;
-	off_t size;
 	
 	memset(tmp, 0, sizeof(tmp));
 	fd = open("background.txt", O_RDWR | O_CREAT | O_TRUNC, 0666);
 
+	// 프로세스 목록을 출력하되 문자열 name 을 포함한 라인만 출력
 	sprintf(command, "ps | grep %s", name);
 	redirection(command, fd, STDOUT);
 
 	lseek(fd, 0, SEEK_SET);
 	read(fd, tmp, sizeof(tmp));
 
+	// 프로세스 목록에 아무것도 찍혀 나오지 않으면 파일을 지우고 return 0
 	if(!strcmp(tmp, "")){
 		unlink("background.txt");
 		close(fd);
 		return 0;
 	}
 
+	// 첫 공백 이전의 문자들을 잘라서 pid로 사용
 	pid = atoi(strtok(tmp, " "));
 	close(fd);
 
@@ -1060,6 +1125,13 @@ pid_t inBackground(char *name)
 	return pid;
 }
 
+/**
+ 결과 파일을 비교한다. 공백은 무시한다.
+ @param file1 파일1
+ @param file2 파일2
+ @return 1: file1, file2를 비교하여 같은 경우
+		 0: 한 글자라도 다른 경우
+ */
 int compare_resultfile(char *file1, char *file2)
 {
 	int fd1, fd2;
@@ -1101,15 +1173,24 @@ int compare_resultfile(char *file1, char *file2)
 	return true;
 }
 
+/**
+ new fd에 old fd 연결, command 실행 후 다시 fd 원위치
+ @param command 명령어
+ @param new 새로운 fd
+ @param old 기존의 fd
+ */
 void redirection(char *command, int new, int old)
 {
 	int saved;
 
+	// old fd 저장 후 old가 new 를 사용하게 변경
 	saved = dup(old);
 	dup2(new, old);
 
+	// 명령어 실행
 	system(command);
 
+	// old fd를 다시 원위치
 	dup2(saved, old);
 	close(saved);
 }
@@ -1181,6 +1262,9 @@ void rmdirs(const char *path)
 	rmdir(path);
 }
 
+/**
+ 대문자를 소문자로 바꿔주는 함수
+ */
 void to_lower_case(char *c)
 {
 	if(*c >= 'A' && *c <= 'Z')

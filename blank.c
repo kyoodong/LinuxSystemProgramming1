@@ -47,6 +47,7 @@ void compare_tree(node *root1,  node *root2, int *result)
 		return;
 	}
 
+	// 비교 연산자는 피연산자가 왼쪽에 있냐 오른쪽에 있냐에 따라 괄호의 방향을 바꾸기만하면 같은 결과를 내기에 이에 대한 처리
 	if(!strcmp(root1->name, "<") || !strcmp(root1->name, ">") || !strcmp(root1->name, "<=") || !strcmp(root1->name, ">=")){
 		if(strcmp(root1->name, root2->name) != 0){
 
@@ -62,6 +63,7 @@ void compare_tree(node *root1,  node *root2, int *result)
 			else if(!strncmp(root2->name, ">=", 2))
 				strncpy(root2->name, "<=", 2);
 
+			// 오른쪽 형제(피연산자)와 위치를 바꿈
 			root2 = change_sibling(root2);
 		}
 	}
@@ -90,6 +92,8 @@ void compare_tree(node *root1,  node *root2, int *result)
 		{
 			compare_tree(root1->child_head, root2->child_head, result);
 
+			// a == b;와 b == a; 를 처리하기 위함
+			// change_sibling 하게 되면 a == b;와 b == a;의 트리모양이 같아지게 됨
 			if(*result == false)
 			{
 				*result = true;
@@ -101,6 +105,7 @@ void compare_tree(node *root1,  node *root2, int *result)
 				|| !strcmp(root1->name, "|") || !strcmp(root1->name, "&")
 				|| !strcmp(root1->name, "||") || !strcmp(root1->name, "&&"))
 		{
+			// 형제노드 갯수가 다르면 false
 			if(get_sibling_cnt(root1->child_head) != get_sibling_cnt(root2->child_head)){
 				*result = false;
 				return;
@@ -111,6 +116,7 @@ void compare_tree(node *root1,  node *root2, int *result)
 			while(tmp->prev != NULL)
 				tmp = tmp->prev;
 
+			// 모든 형제들과 비교하며 같은 피연산자를 찾아서 하나라도 같으면 성공
 			while(tmp != NULL)
 			{
 				compare_tree(root1->child_head, tmp, result);
@@ -130,9 +136,9 @@ void compare_tree(node *root1,  node *root2, int *result)
 		}
 	}
 
-
+	// 다음 형제 노드가 있는 경우
 	if(root1->next != NULL){
-
+		// 형제 노드 수 다르면 false
 		if(get_sibling_cnt(root1) != get_sibling_cnt(root2)){
 			*result = false;
 			return;
@@ -142,15 +148,17 @@ void compare_tree(node *root1,  node *root2, int *result)
 		{
 			tmp = get_operator(root1);
 	
+			// 이 연산자들은 피연산자 간의 순서가 바뀌어도 무관한 연산자들임
 			if(!strcmp(tmp->name, "+") || !strcmp(tmp->name, "*")
 					|| !strcmp(tmp->name, "|") || !strcmp(tmp->name, "&")
 					|| !strcmp(tmp->name, "||") || !strcmp(tmp->name, "&&"))
-			{	
+			{
 				tmp = root2;
 	
 				while(tmp->prev != NULL)
 					tmp = tmp->prev;
 
+				// 형제 노드들 중에 피연산자가 같은게 하나라도 있으면 성공
 				while(tmp != NULL)
 				{
 					compare_tree(root1->next, tmp, result);
@@ -215,7 +223,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 
 				// ++ 또는 -- 를 건너 뛰고 공백이 아닌 첫 번째 글자가 알파벳 또는 숫자인 경우
 				if(is_character(*ltrim(start + 2))){
-					// 이 전 토큰의 마지막 문자가 character 이면 잘못됨?
+					// 이 전 토큰의 마지막 문자가 character 이면 잘못됨
+					// 예를 들어서 a++ b 이런거
 					if(row > 0 && is_character(tokens[row - 1][strlen(tokens[row - 1]) - 1]))
 						return false;
 
@@ -230,7 +239,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 					// 정리하자면 이 while문은 "-- a" 이런건 상관 없음
 					// 근데 "--a  b" 이런 구문은 안됨
 					while(start < end) {
-						// 공백을 만났는데 토큰에 이미 어떤 값이 들어있으면 이는 잘못된 입력
+						// 공백을 만났는데 토큰 끝이 숫자나 문자면 이는 잘못된 입력
+						// 즉 피연산자가 두개 이상이면 잘못된 입력
 						if(*(start - 1) == ' ' && is_character(tokens[row][strlen(tokens[row]) - 1]))
 							return false;
 						// 공백이 아니면 token에 한 글자씩 누적
@@ -243,8 +253,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 					}
 				}
 				
-				// ++, --를 제외하고 다음 문자가 숫자나 알파벳이 아니면서 첫번째 토큰이 아니고 직전 토큰에 어떤 토큰이 존재했다면
-				// 예) "a + ++*a"
+				// 직전 토큰이 숫자나 문자로 끝난 경우
+				// 즉 ++a 가 아닌 a++ 이런 경우를 찾아내기 위함
 				else if(row>0 && is_character(tokens[row - 1][strlen(tokens[row - 1]) - 1])){
 					// 직전 토큰에 ++ 이나 -- 가 있으면 안됨
 					// 이게 "++a++" 이런 구문을 방지하려고 그런듯
@@ -253,12 +263,16 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 
 					// ++이나 --가 없는 경우이므로
 					// 직전 토큰에 이어갈 수 있음
+					// 결국 a, ++ 로 분리된 토큰을 a++ 로 이어붙임
 					memset(tmp, 0, sizeof(tmp));
 					strncpy(tmp, start, 2);
 					strcat(tokens[row - 1], tmp);
 					start += 2;
 					row--;
 				}
+				
+				// 직전이나 직후에 피연산자가 나오지 않은 경우는 그냥 토큰에 ++이나 --를 넣어줌
+				// (*a)++ 이런거
 				else{
 					memset(tmp, 0, sizeof(tmp));
 					strncpy(tmp, start, 2);
@@ -285,7 +299,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 				if(end == NULL)
 					end = &str[strlen(str)];
 
-				// -> 와 이후에 등장하는 최초의 피연산자를 토큰에 추가
+				// -> 연산자와 -> 이후에 등장하는 최초의 피연산자를 토큰에 추가
+				// @TODO: 여기는 또 피연산자 두 개 이상인거 안잡네
 				while(start < end){
 					if(*start != ' ')
 						strncat(tokens[row - 1], start, 1);
@@ -293,16 +308,16 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 				}
 				row--;
 			}
-			// 갑자기 if 문에 end가 등장하는데 애초에 여기는 start == end if문을 통과해야 들어올 수 있는 곳이라 상관없음
+			// 갑자기 if 문에 start가 아닌 end가 등장하는데 애초에 여기는 start == end if문을 통과해야 들어올 수 있는 곳이라 상관없음
 			// 연산자가 &인 경우
+			// &&는 위에서 처리됐으므로 bitwise & 혹은 주소값연산자만 고려함
 			else if(*end == '&')
 			{
 				// 0 번째 토큰을 입력할 차례거나 직전 토큰에 연산자가 있는 경우
+				// 주소값을 의미하는 &
 				if(row == 0 || (strpbrk(tokens[row - 1], op) != NULL)){
-					// 기존 &연산자를 제외한 새로운 연산자를 찾아봄
+					// & 이후의 피연산자를 찾는 로직
 					end = strpbrk(start + 1, op);
-					
-					// 기존 &연산자 외의 연산자가 없다면 end는 구문의 맨 끝으로 지정
 					if(end == NULL)
 						end = &str[strlen(str)];
 					
@@ -322,9 +337,9 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 					}
 				}
 				
+				// bitwise &
 				else{
 					// 토큰에 '&'연산자 이어 붙이고 start 증가
-					// 이런 경우는 a && b 이런 상황이 될듯
 					strncpy(tokens[row], start, 1);
 					start += 1;
 				}
@@ -337,7 +352,9 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 
 				if(row > 0)
 				{
-					// 직전 토큰에 데이터 형을 의미하는 토큰이 있다면 이는 포인터임 예) int*
+					// 직전 토큰에 데이터 형을 의미하는 토큰이 있다면 이는 포인터 변수 선언임
+					// 예) int*
+					// @TODO: row-- 왜 안하지?
 					for(i = 0; i < DATATYPE_SIZE; i++) {
 						if(strstr(tokens[row - 1], datatype[i]) != NULL){
 							strcat(tokens[row - 1], "*");
@@ -351,12 +368,13 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 					if(isPointer == 1)
 						continue;
 					
-					// @TODO: ?
 					// * 다음에 어떤 문자가 존재한다면 end를 옮김 (공백도 가능)
-					if(*(start+1) !=0)
+					if(*(start + 1) != 0)
 						end = start + 1;
 					
 					// 전전 토큰이 '*'이고, 전 토큰이 전부 *로 이루어진 문자열이면 start의 *을 직전 토큰에 이어붙임
+					// 예를 들면 b가 3차원 배열이고 원본 문자열이 a = ***b * c; 이런 구문일 때 **b를 묶어내줌
+					// @TODO: 하나 불안한건 ***b에서 맨 앞에 *은 안묶이는데 이게 트리에서 곱하기 연산자로 쓰일거 같음 따로 처리해줘야하지않나싶다
 					if(row>1 && !strcmp(tokens[row - 2], "*") && (all_star(tokens[row - 1]) == 1)){
 						strncat(tokens[row - 1], start, end - start);
 						row--;
@@ -372,13 +390,14 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 						strncat(tokens[row] , start, end - start); 
 							
 					}
-					// @TODO: ? 뭐야 결국 넣잖아 ㅡ,.ㅡ
+					// @TODO: 뭐야 결국 넣잖아?
 					else
 						strncat(tokens[row], start, end - start);
 
 					start += (end - start);
 				}
 
+				// 포인터
 				// 예) *p = 10;
 			 	else if(row == 0)
 				{
@@ -434,8 +453,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 							return false;
 
 						// 전전 토큰이 문자나 숫자가 아닌 경우(?) 혹은 1번째 토큰인 경우 딱 필요한 괄호 하나와 피연산자만 추려서 전 토큰에 붙인다
-						// 예1) *(((((((((((((a)))))))))))))) -> *(a)
-						// 예2) int b = *((((((a)))))); -> int b = *(a);
+						// 예1) *(((((((((((((a)))))))))))))) -> *a
+						// 예2) int b = *((((((a)))))); -> int b = *a;
 						if( (row > 1 && !is_character(tokens[row - 2][strlen(tokens[row - 2]) - 1])) || row == 1){ 
 							strncat(tokens[row - 1], start + 1, end - start - rcount - 1);
 							row--;
@@ -475,7 +494,6 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 			else{
 				if(row > 0 && !strcmp(tokens[row - 1], "++"))
 					return false;
-
 				
 				if(row > 0 && !strcmp(tokens[row - 1], "--"))
 					return false;
@@ -483,12 +501,13 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 				strncat(tokens[row], start, 1);
 				start += 1;
 
-				// --, ++ 이 가능한가?
 				if(!strcmp(tokens[row], "-") || !strcmp(tokens[row], "+") || !strcmp(tokens[row], "--") || !strcmp(tokens[row], "++")){
 					if(row == 0)
 						row--;
 
 					// 직전 토큰이 문자나 숫자로 끝나지 않고 ++, -- 가 없다면 row-- (?)
+					// @TODO: 이게 이러면 근데 다음 연산자는 row에 저장이 된 상태에서 row-- 되어버리면 토큰이 꼬이는 문제가 있음
+					// 꼬인다는게 예를 들면 b++ * c; 이런 구문의 경우 토큰이 b++, *c 로 저장됨. 마치 c가 포인터인것처럼
 					else if(!is_character(tokens[row - 1][strlen(tokens[row - 1]) - 1])){
 						if(strstr(tokens[row - 1], "++") == NULL && strstr(tokens[row - 1], "--") == NULL)
 							row--;
@@ -499,14 +518,16 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 		
 		// start != end
 		else {
-			// 토큰
+			// a = ***b * c; 이런 경우에 *, **b로 토큰을 쪼개줌 (포인터는 묶어준다는 말임)
+			// @TODO: 근데 위 예시에서도 보이듯이 ***b까지가 포인터 연산인데 맨 앞에 *은 안묶어줌 이런 경우 나중에 트리에서 맨 앞의 *은 곱하기로 인식될 여지가 있음
 			if(row > 1 && all_star(tokens[row - 1]) && !is_character(tokens[row - 2][strlen(tokens[row - 2]) - 1]))
 				row--;
 
 			if(row == 1 && all_star(tokens[row - 1]))
 				row--;
 
-			// student.id 이런거 처리하려고 한듯
+			// 피연산자 토큰에 추가
+			// student.id 이런거 묶어서 처리
 			for(i = 0; i < end - start; i++){
 				if(i > 0 && *(start + i) == '.'){
 					strncat(tokens[row], start + i, 1);
@@ -580,7 +601,7 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 	if(row == 1 && all_star(tokens[row - 1]))
 		row--;	
 
-	// 맨마지막 피연산자
+	// 맨마지막 피연산자처리
 	for(i = 0; i < strlen(start); i++)   
 	{
 		if(start[i] == ' ')  
@@ -630,10 +651,17 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 				if(strcmp(tokens[row-1], "struct") != 0 && strcmp(tokens[row-1], "unsigned") != 0)
 					return false;
 			}
+			
+			// 1번째 토큰이 문자나 숫자로 끝난다는 것은
+			// 0번째 토큰이 extern, unsigned 혹은 연산자여야 한다는 것이다.
 			else if(row == 1 && is_character(tokens[row][strlen(tokens[row]) - 1])) {
 				if(strcmp(tokens[0], "extern") != 0 && strcmp(tokens[0], "unsigned") != 0 && is_typeStatement(tokens[0]) != 2)	
 					return false;
 			}
+			
+			// 타입 선언문이 0번째 토큰이 아닌곳에서 발견된 경우
+			// 피연산자가 두 개 연속 나올 수는 없으므로
+			// 두 개 연속 가능한 경우는 타입 선언문 이 전에 unsigned 혹은 extern이 나오는 경우 뿐이므로 이 둘이 아닌 경우 false
 			else if(row > 1 && is_typeStatement(tokens[row - 1]) == 2){
 				if(strcmp(tokens[row - 2], "unsigned") != 0 && strcmp(tokens[row - 2], "extern") != 0)
 					return false;
@@ -723,11 +751,11 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 
 		else if(!strcmp(tokens[*idx], "("))
 		{
-			// @TODO: is_operator 연산이 필요한가?
-			// 직전 토큰이 연산자가 아니고 ','일 때 새로운 트리를 만들어서 cur 에 이어 붙여줌
+			// 직전 토큰이 연산자 또는 ','가 아닐 때 새로운 트리를 만들어서 cur 에 이어 붙여줌
 			if(*idx > 0 && !is_operator(tokens[*idx - 1]) && strcmp(tokens[*idx - 1], ",") != 0){
 				fstart = true;
 
+				// @TODO: 두 번 이상 도는 경우가 있나?
 				while(1)
 				{
 					*idx += 1;
@@ -773,7 +801,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 					if(!strcmp(new->name, "|") || !strcmp(new->name, "||") 
 						|| !strcmp(new->name, "&") || !strcmp(new->name, "&&"))
 					{
-						// 현재 노드를 현재 노드의 마지막 자식노드로 이동한 뒤 new 트리의 부모 노드를 바뀐 현재 노드로 갈아낌
+						// new 의 자식 노드(첫 번째 피연산자)를 cur의 맨 끝노드의 next로 추가
 						cur = get_last_child(cur);
 
 						if(new->child_head != NULL){
@@ -789,17 +817,20 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 					{
 						i = 0;
 
+						// 다음 연산자를 찾아다님
 						while(1)
 						{
 							if(!strcmp(tokens[*idx + i], ""))
 								break;
 
+							// ')' 가 아닌 연산자라면
 							if(is_operator(tokens[*idx + i]) && strcmp(tokens[*idx + i], ")") != 0)
 								break;
 
 							i++;
 						}
 						
+						// 다음 연산자가 우선순위가 더 높다면 현재의 연산자(new에 저장된 연산자)를 cur 맨 끝에 붙임
 						if(get_precedence(tokens[*idx + i]) < get_precedence(new->name))
 						{
 							cur = get_last_child(cur);
@@ -856,7 +887,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 
 					// root
 					if(operator->parent == NULL && operator->prev == NULL){
-						// operator 보다 new가 우선순위가 낮다면 윗쪽에 배치
+						// operator 보다 new의 우선순위가 낮다면 operator를 new의 아래에 배치
 						if(get_precedence(operator->name) < get_precedence(new->name)){
 							cur = insert_node(operator, new);
 						}
@@ -871,6 +902,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 						}
 						
 						// 우선순위가 같은 경우
+						// @TODO: new 노드 버리는데?
 						else
 						{
 							operator = cur;
@@ -982,6 +1014,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
  @param parent 노드
  @return parent
  자식 노드를 원래 자식노드의 next로 지정하고 기존 자식노드는 새로운 자식노드의 next가 됨
+ 오른쪽 형제와 위치를 바꾼다고 생각하면 됨
  */
 node *change_sibling(node *parent)
 {
@@ -1115,7 +1148,7 @@ node *get_root(node *cur)
 }
 
 /**
- 기존 부모 노드와 새로운 부모 노드 후보 중 우선순위가 높은 노드를 뽑아줌
+ 기존 부모 노드 중에서 new 노드보다 우선순위가 높은 노드를 찾아주는 함수
  @param cur 기존 부모 노드
  @param new 새로운 부모 노드 후보
  @return
@@ -1145,11 +1178,11 @@ node *get_high_precedence_node(node *cur, node *new)
 		return cur;
 	
 	// @TODO: 일단 대충 에러만 안나게 해보자
-	return cur->parent;
+	return get_high_precedence_node(cur->parent, new);
 }
 
 /**
- 우선순위가 가장 높은 연산자 노드를 찾아주는 함수
+ cur 트리 중에서 우선순위가 가장 높은 연산자 노드를 찾아주는 함수
  @param cur 탐색 노드 중 최상위 노드
  @param new 새로운 연산자 노드
  @return 우선순위가 가장 높은 연산자 노드
@@ -1178,6 +1211,7 @@ node *get_most_high_precedence_node(node *cur, node *new)
 
 /**
  기존 노드의 위치에 새로운 노드를 갈아끼고, 기존 노드를 새로운 노드의 child_head로 만들어주는 함수
+ old의 위치에 new를 넣고 old가 new의 자식이 되는 거임
  @param old 기존 노드
  @param new 새로운 노드
  @return 새로운 노드의 포인터
