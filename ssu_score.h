@@ -28,6 +28,9 @@
 #ifndef ERROR
 	#define ERROR 0
 #endif
+#ifndef OVER_PENALTY
+	#define OVER_PENALTY 0
+#endif
 
 #define FILELEN 512
 #define BUFLEN 1024

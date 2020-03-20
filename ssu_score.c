@@ -865,13 +865,21 @@ double score_program(char *id, char *filename)
 	// 프로그램 컴파일
 	compile = compile_program(id, filename);
 
-	if(compile == ERROR || compile == false)
+	if(compile == false)
 		return false;
+
+	// 컴파일 점수는 따로 감점해야함
+	if (compile == ERROR)
+		return compile;
 	
 	result = execute_program(id, filename);
 
 	if(!result)
 		return false;
+
+	// 5초 페널티
+	if (result != true)
+		return result;
 
 	if(compile < 0)
 		return compile;
@@ -1062,10 +1070,10 @@ int execute_program(char *id, char *filename)
 		end = time(NULL);
 
 		// 실행 시간이 5초를 넘어가면 오답 처리
-		if(difftime(end, start) > OVER){
+		if(difftime(end, start) >= OVER){
 			kill(pid, SIGKILL);
 			close(fd);
-			return false;
+			return OVER_PENALTY;
 		}
 	}
 
