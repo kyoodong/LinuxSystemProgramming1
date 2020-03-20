@@ -91,7 +91,7 @@ void ssu_score(int argc, char *argv[])
 	chdir(saved_path);
 
 	// 점수 표 파일 생성
-	set_scoreTable(ansDir);
+	set_scoreTable(saved_path);
 	
 	// 모든 학생의 학번을 알 수 있는 id_table 생성
 	set_idTable(stuDir);
