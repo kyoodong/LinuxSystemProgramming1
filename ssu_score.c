@@ -91,7 +91,7 @@ void ssu_score(int argc, char *argv[])
 	chdir(saved_path);
 
 	// 점수 표 파일 생성
-	set_scoreTable(saved_path);
+	set_scoreTable(ansDir, saved_path);
 	
 	// 모든 학생의 학번을 알 수 있는 id_table 생성
 	set_idTable(stuDir);
@@ -238,11 +238,11 @@ int is_exist(char (*src)[FILELEN], char *target)
  점수 표를 작성하는 함수
  @param ansDir 답안 디렉토리 경로
  */
-void set_scoreTable(char *ansDir)
+void set_scoreTable(char* ansDir, char *baseDir)
 {
 	char filename[FILELEN];
 
-	sprintf(filename, "%s/%s", ansDir, "score_table.csv");
+	sprintf(filename, "%s/%s", baseDir, "score_table.csv");
 
 	// 점수 표 파일이 존재하는 지 확인하여 존재하면 읽음
 	// @TODO: 기왕 검사하는거 읽기 권한이 있는지 확인하는게 좋은거 같음

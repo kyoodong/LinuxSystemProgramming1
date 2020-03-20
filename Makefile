@@ -20,7 +20,7 @@ ssu_score_debug.o : ssu_score.c ssu_score.h blank.h
 	gcc -c ssu_score.c -o ssu_score_debug.o -g
 
 blank_debug.o : blank.c blank.h
-	gcc -c blank.c -o blank_debug.o -g
+	gcc -c blank.c -o blank_debug.o -g -ggdb
 
 clean :
 	rm *.o

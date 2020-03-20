@@ -71,7 +71,7 @@ int get_file_type(char *filename);
 void rmdirs(const char *path);
 void to_lower_case(char *c);
 
-void set_scoreTable(char *ansDir);
+void set_scoreTable(char *ansDir, char *baseDir);
 void read_scoreTable(char *path);
 void make_scoreTable(char *ansDir);
 void write_scoreTable(char *filename);
