@@ -776,9 +776,11 @@ int score_blank(char *id, char *filename)
 		return false;
 	}
 
+	/*
 	for (int t = 0; tokens[t][0] != '\0'; t++) {
 		printf("%d = %s\n", t, tokens[t]);
 	}
+	*/
 
 	idx = 0;
 	std_root = make_tree(std_root, tokens, &idx, 0);
@@ -930,7 +932,7 @@ double compile_program(char *id, char *filename)
 	// 스레드로 동작시켜야하는 문제인지 확인
 	isthread = is_thread(qname);
 
-	sprintf(tmp_f, "%s/%s/%s", ansDir, qname, filename);
+	sprintf(tmp_f, "%s/%s", ansDir, filename);
 	sprintf(tmp_e, "%s/%s.exe", ansDir, qname);
 
 	// 컴파일 명령어 세팅
@@ -1051,7 +1053,7 @@ int execute_program(char *id, char *filename)
 	fd = creat(ans_fname, 0666);
 
 	// 정답 프로그램 실행
-	sprintf(tmp, "%s/%s/%s.exe", ansDir, qname, qname);
+	sprintf(tmp, "%s/%s.exe", ansDir, qname);
 	redirection(tmp, fd, STDOUT);
 	close(fd);
 
@@ -1061,6 +1063,7 @@ int execute_program(char *id, char *filename)
 	fd = creat(std_fname, 0666);
 
 	// 학생 프로그램 실행
+	// @TODO &는 왜있는거지
 	sprintf(tmp, "%s/%s/%s.stdexe &", stuDir, id, qname);
 	start = time(NULL);
 	redirection(tmp, fd, STDOUT);
@@ -1220,7 +1223,7 @@ void rmdirs(const char *path)
 	struct dirent *dirp;
 	struct stat statbuf;
 	DIR *dp;
-	char tmp[50];
+	char tmp[FILELEN];
 	
 	// 디렉토리 스트리 열기
 	if((dp = opendir(path)) == NULL)

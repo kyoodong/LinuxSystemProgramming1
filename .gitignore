@@ -1,3 +1,4 @@
 *.stdout
 *.stdexe
 *.txt
+*.exe
