@@ -297,6 +297,7 @@ void make_scoreTable(char *ansDir)
 	char tmp[BUFLEN];
 	int idx = 0;
 	int i;
+	int fd;
 
 	// 안내 메시지 출력
 	num = get_create_type();
@@ -318,12 +319,8 @@ void make_scoreTable(char *ansDir)
 	if((dp = opendir(ansDir)) == NULL){
 		fprintf(stderr, "open dir error for %s\n", ansDir);
 		return;
-	}	
+	}
 
-	// readdir : 디렉토리 엔트리를 하나 읽은 뒤 해당 엔트리를 표현하는 포인터를 리턴함
-	// 즉 내부 파일을 하나씩 읽는다고 생각하면 됨
-	// 더 이상 읽을 엔트리(파일)이 없는 경우 NULL 을 리턴
-	// 즉 ansDir 내부의 모든 엔트리를 읽음
 	while((dirp = readdir(dp)) != NULL)
 	{
 		// 자기 자신을 의미하는 .과 부모 디렉토리를 의미하는 ..은 예외
@@ -332,27 +329,13 @@ void make_scoreTable(char *ansDir)
 
 		sprintf(tmp, "%s/%s", ansDir, dirp->d_name);
 
-		// ? 여기가 이해가 안되네 ans 안에 폴더들이 있나? 파일 밖에 없지 않나
-		if((c_dp = opendir(tmp)) == NULL){
-			fprintf(stderr, "open dir error for %s\n", tmp);
-			return;
-		}
+		// type = C 파일인지 txt 파일인지 체크
+		// -1 인 경우 둘 다 아닌 다른 파일
+		if((type = get_file_type(dirp->d_name)) < 0)
+			continue;
 
-		while((c_dirp = readdir(c_dp)) != NULL)
-		{
-			if(!strcmp(c_dirp->d_name, ".") || !strcmp(c_dirp->d_name, ".."))
-				continue;
-
-			// type = C 파일인지 txt 파일인지 체크
-			// -1 인 경우 둘 다 아닌 다른 파일
-			if((type = get_file_type(c_dirp->d_name)) < 0)
-				continue;
-
-			// .c 파일 / .txt 파일의 파일 명은 score_table 에 쌓아둠ㅁ
-			strcpy(score_table[idx++].qname, c_dirp->d_name);
-		}
-
-		closedir(c_dp);
+		// .c 파일 / .txt 파일의 파일 명은 score_table 에 쌓아둠ㅁ
+		strcpy(score_table[idx++].qname, dirp->d_name);
 	}
 
 	closedir(dp);
