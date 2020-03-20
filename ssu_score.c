@@ -1039,7 +1039,7 @@ int execute_program(char *id, char *filename)
 
 	// 정답 파일 실행
 	// 표준 출력 파일 생성
-	sprintf(ans_fname, "%s/%s/%s.stdout", ansDir, qname, qname);
+	sprintf(ans_fname, "%s/%s.stdout", ansDir, qname);
 	fd = creat(ans_fname, 0666);
 
 	// 정답 프로그램 실행
