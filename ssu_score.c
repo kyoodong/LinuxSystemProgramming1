@@ -785,8 +785,13 @@ int score_blank(char *id, char *filename)
 
 	// 토큰 쪼개기
 	if(!make_tokens(s_answer, tokens)){
+		fprintf(stderr, "토큰 쪼개기 실패\n");
 		close(fd_std);
 		return false;
+	}
+
+	for (int t = 0; tokens[t][0] != '\0'; t++) {
+		printf("%d = %s\n", t, tokens[t]);
 	}
 
 	idx = 0;
