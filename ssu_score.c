@@ -719,7 +719,7 @@ double score_student(int fd, char *id)
 		}
 	}
 
-	printf("%s is finished.. score : %.2f\n", id, score); 
+	printf("%s is finished. score : %.2f\n", id, score); 
 
 	sprintf(tmp, "%.2f\n", score);
 	write(fd, tmp, strlen(tmp));

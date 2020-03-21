@@ -13,12 +13,12 @@ void main()
     char buf[50];	        //read()에서 읽는 버퍼
     int i = 0;		//for(),while() 문에 조건문 사용
 
-    if((fd_w =open(fname,O_WRONLY|O_CREAT)) < 0){
+    if((fd_w =open(fname,O_WRONLY|O_CREAT, 0666)) < 0){
         	fprintf(stderr,"creat error for %s \n", fname);
         	exit(1);
     }
 
-    if((fd_r= open(frname,O_RDONLY |O_CREAT)) < 0){
+    if((fd_r= open(frname,O_RDONLY |O_CREAT, 0666)) < 0){
         fprintf(stderr,"open error for %s \n",frname);
         exit(1);
     }
