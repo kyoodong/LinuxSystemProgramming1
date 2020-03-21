@@ -30,6 +30,7 @@ int eOption = false;
 int tOption = false;
 int pOption = false;
 int cOption = false;
+int mOption = false;
 
 // ssu_score 의 메인함수
 void ssu_score(int argc, char *argv[])
@@ -93,6 +94,8 @@ void ssu_score(int argc, char *argv[])
 	// 점수 표 파일 생성
 	set_scoreTable(ansDir, saved_path);
 	
+	if (mOption)
+		ask_modification_of_question_score();
 	// 모든 학생의 학번을 알 수 있는 id_table 생성
 	set_idTable(stuDir);
 
@@ -105,6 +108,41 @@ void ssu_score(int argc, char *argv[])
 		do_cOption(cIDs);
 
 	return;
+}
+
+int find_question_by_name(char* qname) {
+	int size = sizeof(score_table) / sizeof(score_table[0]);
+	for (int i = 0; i < size; i++) {
+		if (strlen(score_table[i].qname) == 0)
+			return -1;
+
+		if (!strcmp(score_table[i].qname, qname))
+			return i;
+	}
+	return -1;
+}
+
+void ask_modification_of_question_score() {
+	char qname[FILELEN];
+	double newScore;
+	while (true) {
+		printf("Input question's number to modify >> ");
+		scanf("%s", qname);
+		
+		if (!strcmp(qname, "no")) {
+			break;
+		}
+
+		int index = find_question_by_name(qname);
+		if (index == -1) {
+			printf("%s is not found!\n", qname);
+			continue;
+		}
+		printf("Current score : %lf\n", score_table[index].score);
+		printf("New score : ");
+		scanf("%lf", &newScore);
+		score_table[index].score = newScore;
+	}
 }
 
 /**
@@ -120,9 +158,13 @@ int check_option(int argc, char *argv[])
 	// -e filename
 	// -t, -h, -p, -c 라는 옵션을 받을 수 있음
 	// @TODO: != -1 보다는 != EOF 가 더 좋아보임
-	while((c = getopt(argc, argv, "e:thpc")) != -1)
+	// m 옵션 추가
+	while((c = getopt(argc, argv, "e:thpcm")) != -1)
 	{
 		switch(c){
+			case 'm':
+				mOption = true;
+				break;
 			// -e : 에러 파일 출력
 			case 'e':
 				eOption = true;
