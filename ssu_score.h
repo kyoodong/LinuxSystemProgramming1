@@ -62,9 +62,6 @@ pid_t inBackground(char *name);
 double check_error_warning(char *filename);
 int compare_resultfile(char *file1, char *file2);
 
-void do_cOption(char (*ids)[FILELEN]);
-int is_exist(char (*src)[FILELEN], char *target);
-
 int is_thread(char *qname);
 void redirection(char *command, int newfd, int oldfd);
 int get_file_type(char *filename);
@@ -83,5 +80,9 @@ void sort_scoreTable(int size);
 void get_qname_number(char *qname, int *num1, int *num2);
 
 int find_question_by_name(char* qname); 
+void ask_modification_of_question_score(char* dirname);
+void print_student_wrong_question(char* dirname);
+int is_exist_in_id_table(char* stdId);
+int find_question_by_name(char* qname);
 void ask_modification_of_question_score(char* dirname);
 #endif

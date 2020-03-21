@@ -28,7 +28,7 @@ char cIDs[ARGNUM][FILELEN];
 
 int eOption = false;
 int tOption = false;
-int cOption = false;
+int iOption = false;
 int mOption = false;
 
 // ssu_score 의 메인함수
@@ -49,7 +49,7 @@ void ssu_score(int argc, char *argv[])
 	
 	// -c 옵션이 아니면 stuDir, ansDir 을 설정
 	// @TODO: -c 옵션이 뭐지??
-	if(argc >= 3){
+	if(argc >= 3 && argv[1][1] != 'i'){
 		strcpy(stuDir, argv[1]);
 		strcpy(ansDir, argv[2]);
 	}
@@ -61,6 +61,11 @@ void ssu_score(int argc, char *argv[])
 	// getcwd : 작업 디렉토리 이름을 저장해주는 함수
 	// 현재 작업 디렉토리 이름을 saved_path 에 저장
 	getcwd(saved_path, BUFLEN);
+
+	if (iOption) {
+		print_student_wrong_question(saved_path);
+		return;
+	}
 
 	// chdir : 현재 작업 디렉토리를 바꿔주는 함수
 	// 현재 작업 디렉토리를 학생 디렉토리로 옮겨보고, 에러 발생 시 종료
@@ -95,12 +100,83 @@ void ssu_score(int argc, char *argv[])
 	printf("grading student's test papers..\n");
 	score_students();
 
-	// c옵션은 명세에 없는듯함
-	// @TODO: 지우자
-	if(cOption)
-		do_cOption(cIDs);
-
 	return;
+}
+
+void print_student_wrong_question(char* dirname) {
+	char scoreTableFileName[FILELEN];
+	char studentScoreFileName[FILELEN];
+	int size;
+	FILE* fp;
+	char buffer[BUFLEN];
+	int questionCount;
+	int questionIndex;
+	double score;
+	int wrongCount;
+	char wrongQuestions[QNUM][FILELEN];
+	char stdId[10];
+	char fname[FILELEN];
+	
+	sprintf(scoreTableFileName, "%s/%s", dirname, "score_table.csv");
+	sprintf(studentScoreFileName, "%s/%s", dirname, "score.csv");
+	if (access(scoreTableFileName, F_OK | R_OK) < 0) {
+		fprintf(stderr, "Cannot read %s", scoreTableFileName);
+		return;
+	}
+
+	sprintf(fname, "%s/%s", dirname, "score_table.csv");
+	read_scoreTable(fname);
+	size = sizeof(score_table) / sizeof(score_table[0]);
+	for (int i = 0; i < size; i++) {
+		if (strlen(score_table[i].qname) == 0)
+			break;
+
+		questionCount++;
+	}
+	
+	if ((fp = fopen(studentScoreFileName, "r")) == NULL) {
+		fprintf(stderr, "Cannot read %s", studentScoreFileName);
+		return;
+	}
+
+	fscanf(fp, "%s\n", buffer);
+	while (!feof(fp)) {
+		fscanf(fp, "%[^,],", buffer);
+		if (is_exist_in_id_table(buffer)) {
+			strcpy(stdId, buffer);
+			wrongCount = 0;
+			for (int j = 0; j < questionCount; j++) {
+				fscanf(fp, "%[^,],", buffer);
+				score = atof(buffer);
+				if (score_table[j].score != score) {
+					strcpy(wrongQuestions[wrongCount++], score_table[j].qname);
+				}
+			}
+			fscanf(fp, "%s\n", buffer);
+
+			if (wrongCount > 0) {
+				printf("%s's wrong answer :\n", stdId);
+				for (int j = 0; j < wrongCount - 1; j++) {
+					printf("%s, ", wrongQuestions[j]);
+				}
+				printf("%s\n", wrongQuestions[wrongCount - 1]);
+			} else {
+				printf("%s's has no wrong answer\n", stdId);
+			}
+		} else {
+			fscanf(fp, "%s\n", buffer);
+		}
+	}
+}
+
+int is_exist_in_id_table(char* stdId) {
+	int size = sizeof(id_table) / sizeof(id_table[0]);
+	for (int i = 0; i < size; i++) {
+		if (!strcmp(stdId, id_table[i])) {
+			return true;
+		}
+	}
+	return false;
 }
 
 int find_question_by_name(char* qname) {
@@ -160,11 +236,26 @@ int check_option(int argc, char *argv[])
 	// -t, -h, -p, -c 라는 옵션을 받을 수 있음
 	// @TODO: != -1 보다는 != EOF 가 더 좋아보임
 	// m 옵션 추가
-	while((c = getopt(argc, argv, "e:thpcm")) != -1)
+	while((c = getopt(argc, argv, "e:thpmi")) != -1)
 	{
 		switch(c){
 			case 'm':
 				mOption = true;
+				break;
+
+			case 'i':
+				iOption = true;
+				i = optind;
+				j = 0;
+				while (i < argc && argv[i][0] != '-') {
+					if (j >= ARGNUM) {
+						printf("Maximum Number of Argument Exceeded. :: %s\n", argv[i]);
+					} else {
+						strcpy(id_table[j], argv[i]);
+					}
+					j++;
+					i++;
+				}
 				break;
 			// -e : 에러 파일 출력
 			case 'e':
@@ -208,53 +299,6 @@ int check_option(int argc, char *argv[])
 	return true;
 }
 
-
-void do_cOption(char (*ids)[FILELEN])
-{
-	FILE *fp;
-	char tmp[BUFLEN];
-	int i = 0;
-	char *p, *saved;
-
-	if((fp = fopen("score.csv", "r")) == NULL){
-		fprintf(stderr, "file open error for score.csv\n");
-		return;
-	}
-
-	fscanf(fp, "%s\n", tmp);
-
-	while(fscanf(fp, "%s\n", tmp) != EOF)
-	{
-		p = strtok(tmp, ",");
-
-		if(!is_exist(ids, tmp))
-			continue;
-
-		printf("%s's score : ", tmp);
-
-		while((p = strtok(NULL, ",")) != NULL)
-			saved = p;
-
-		printf("%s\n", saved);
-	}
-	fclose(fp);
-}
-
-int is_exist(char (*src)[FILELEN], char *target)
-{
-	int i = 0;
-
-	while(1)
-	{
-		if(i >= ARGNUM)
-			return false;
-		else if(!strcmp(src[i], ""))
-			return false;
-		else if(!strcmp(src[i++], target))
-			return true;
-	}
-	return false;
-}
 
 /**
  점수 표를 작성하는 함수
