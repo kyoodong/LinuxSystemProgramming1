@@ -180,12 +180,20 @@ int is_exist_in_id_table(char* stdId) {
 }
 
 int find_question_by_name(char* qname) {
+	char* index;
+	char name[10];
 	int size = sizeof(score_table) / sizeof(score_table[0]);
 	for (int i = 0; i < size; i++) {
 		if (strlen(score_table[i].qname) == 0)
 			return -1;
 
-		if (!strcmp(score_table[i].qname, qname))
+		strcpy(name, score_table[i].qname);
+		index = strrchr(name, '.');
+		if (index != NULL) {
+			*index = '\0';
+		}
+
+		if (!strcmp(name, qname))
 			return i;
 	}
 	return -1;
