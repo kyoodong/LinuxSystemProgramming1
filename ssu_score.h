@@ -83,5 +83,5 @@ void sort_scoreTable(int size);
 void get_qname_number(char *qname, int *num1, int *num2);
 
 int find_question_by_name(char* qname); 
-void ask_modification_of_question_score();
+void ask_modification_of_question_score(char* dirname);
 #endif

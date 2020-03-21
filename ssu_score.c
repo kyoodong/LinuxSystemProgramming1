@@ -95,7 +95,7 @@ void ssu_score(int argc, char *argv[])
 	set_scoreTable(ansDir, saved_path);
 	
 	if (mOption)
-		ask_modification_of_question_score();
+		ask_modification_of_question_score(saved_path);
 	// 모든 학생의 학번을 알 수 있는 id_table 생성
 	set_idTable(stuDir);
 
@@ -122,9 +122,12 @@ int find_question_by_name(char* qname) {
 	return -1;
 }
 
-void ask_modification_of_question_score() {
+void ask_modification_of_question_score(char* dirname) {
 	char qname[FILELEN];
 	double newScore;
+	int count = 0;
+	char fname[FILELEN];
+
 	while (true) {
 		printf("Input question's number to modify >> ");
 		scanf("%s", qname);
@@ -142,6 +145,11 @@ void ask_modification_of_question_score() {
 		printf("New score : ");
 		scanf("%lf", &newScore);
 		score_table[index].score = newScore;
+		count++;
+	}
+	if (count > 0) {
+		sprintf(fname, "%s/%s", dirname, "score_table.csv");
+		write_scoreTable(fname);
 	}
 }
 
