@@ -28,7 +28,6 @@ char cIDs[ARGNUM][FILELEN];
 
 int eOption = false;
 int tOption = false;
-int pOption = false;
 int cOption = false;
 int mOption = false;
 
@@ -50,7 +49,7 @@ void ssu_score(int argc, char *argv[])
 	
 	// -c 옵션이 아니면 stuDir, ansDir 을 설정
 	// @TODO: -c 옵션이 뭐지??
-	if(argc >= 3 && strcmp(argv[1], "-c") != 0){
+	if(argc >= 3){
 		strcpy(stuDir, argv[1]);
 		strcpy(ansDir, argv[2]);
 	}
@@ -58,12 +57,6 @@ void ssu_score(int argc, char *argv[])
 	// 옵션 검사 후 알 수 없는 옵션 있으면 프로그램 종료
 	if(!check_option(argc, argv))
 		exit(1);
-
-	// c 옵션만 있는 경우
-	if(!eOption && !tOption && !pOption && cOption){
-		do_cOption(cIDs);
-		return;
-	}
 
 	// getcwd : 작업 디렉토리 이름을 저장해주는 함수
 	// 현재 작업 디렉토리 이름을 saved_path 에 저장
@@ -205,27 +198,6 @@ int check_option(int argc, char *argv[])
 				}
 				break;
 				
-				// p 옵션이 있나?
-			case 'p':
-				pOption = true;
-				break;
-				
-				// c 옵션도 없을듯?
-			case 'c':
-				cOption = true;
-				i = optind;
-				j = 0;
-
-				while(i < argc && argv[i][0] != '-'){
-
-					if(j >= ARGNUM)
-						printf("Maximum Number of Argument Exceeded.  :: %s\n", argv[i]);
-					else
-						strcpy(cIDs[j], argv[i]);
-					i++; 
-					j++;
-				}
-				break;
 			case '?':
 				// 알 수 없는 옵션
 				printf("Unkown option %c\n", optopt);
@@ -641,8 +613,7 @@ void score_students()
 		score += score_student(fd, id_table[num]);
 	}
 
-	if(pOption)
-		printf("Total average : %.2f\n", score / num);
+	printf("Total average : %.2f\n", score / num);
 
 	close(fd);
 }
@@ -704,10 +675,7 @@ double score_student(int fd, char *id)
 		}
 	}
 
-	if(pOption)
-		printf("%s is finished.. score : %.2f\n", id, score); 
-	else
-		printf("%s is finished..\n", id);
+	printf("%s is finished.. score : %.2f\n", id, score); 
 
 	sprintf(tmp, "%.2f\n", score);
 	write(fd, tmp, strlen(tmp));
