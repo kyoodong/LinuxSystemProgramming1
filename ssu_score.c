@@ -19,6 +19,7 @@ struct ssu_scoreTable score_table[QNUM];
 
 // 학생들의 학번 표
 char id_table[SNUM][10];
+char wrong_id_table[SNUM][10];
 
 char stuDir[BUFLEN];
 char ansDir[BUFLEN];
@@ -36,6 +37,7 @@ void ssu_score(int argc, char *argv[])
 {
 	char saved_path[BUFLEN];
 	int i;
+	int continueRunning = true;
 
 	for(i = 0; i < argc; i++){
 		// 도움말 출력
@@ -52,6 +54,8 @@ void ssu_score(int argc, char *argv[])
 	if(argc >= 3 && argv[1][1] != 'i'){
 		strcpy(stuDir, argv[1]);
 		strcpy(ansDir, argv[2]);
+	} else {
+		continueRunning = false;
 	}
 
 	// 옵션 검사 후 알 수 없는 옵션 있으면 프로그램 종료
@@ -62,7 +66,7 @@ void ssu_score(int argc, char *argv[])
 	// 현재 작업 디렉토리 이름을 saved_path 에 저장
 	getcwd(saved_path, BUFLEN);
 
-	if (iOption) {
+	if (iOption && !continueRunning) {
 		print_student_wrong_question(saved_path);
 		return;
 	}
@@ -100,6 +104,9 @@ void ssu_score(int argc, char *argv[])
 	printf("grading student's test papers..\n");
 	score_students();
 
+	if (iOption) {
+		print_student_wrong_question(saved_path);
+	}
 	return;
 }
 
@@ -142,7 +149,7 @@ void print_student_wrong_question(char* dirname) {
 	fscanf(fp, "%s\n", buffer);
 	while (!feof(fp)) {
 		fscanf(fp, "%[^,],", buffer);
-		if (is_exist_in_id_table(buffer)) {
+		if (is_exist_in_wrong_id_table(buffer)) {
 			strcpy(stdId, buffer);
 			wrongCount = 0;
 			for (int j = 0; j < questionCount; j++) {
@@ -169,10 +176,10 @@ void print_student_wrong_question(char* dirname) {
 	}
 }
 
-int is_exist_in_id_table(char* stdId) {
-	int size = sizeof(id_table) / sizeof(id_table[0]);
+int is_exist_in_wrong_id_table(char* stdId) {
+	int size = sizeof(wrong_id_table) / sizeof(wrong_id_table[0]);
 	for (int i = 0; i < size; i++) {
-		if (!strcmp(stdId, id_table[i])) {
+		if (!strcmp(stdId, wrong_id_table[i])) {
 			return true;
 		}
 	}
@@ -259,7 +266,7 @@ int check_option(int argc, char *argv[])
 					if (j >= ARGNUM) {
 						printf("Maximum Number of Argument Exceeded. :: %s\n", argv[i]);
 					} else {
-						strcpy(id_table[j], argv[i]);
+						strcpy(wrong_id_table[j], argv[i]);
 					}
 					j++;
 					i++;
