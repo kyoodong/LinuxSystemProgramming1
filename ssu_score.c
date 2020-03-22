@@ -733,6 +733,7 @@ double score_student(int fd, char *id)
 				score += OVER_PENALTY;
 			   	sprintf(tmp, "%.2f,", (double) OVER_PENALTY);	
 			} else if(result < 0){
+				printf("%f\n", result);
 				score = score + score_table[i].score + result;
 				sprintf(tmp, "%.2f,", score_table[i].score + result);
 			}
@@ -960,8 +961,9 @@ double score_program(char *id, char *filename)
 	if (result == OVER)
 		return result;
 
-	if(compile < 0)
+	if(compile < 0) {
 		return compile;
+	}
 
 	return true;
 }

@@ -29,10 +29,10 @@
 	#define ERROR 6 
 #endif
 #ifndef ERROR_PENALTY
-	#define ERROR_PENALTY -50
+	#define ERROR_PENALTY 0
 #endif
 #ifndef OVER_PENALTY
-	#define OVER_PENALTY -500
+	#define OVER_PENALTY 0
 #endif
 
 #define FILELEN 512

@@ -29,7 +29,7 @@ int main(void)
         exit(1);
     }
 
-    printf("[ First print]\n");
+    printf("[ First print]%d\n");
 
     while (!feof(fp)) {  
         if ((res = fread(&tmp, sizeof(Person), 1, fp)) != 1) 
