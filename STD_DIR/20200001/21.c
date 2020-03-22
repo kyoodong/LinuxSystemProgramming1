@@ -47,6 +47,5 @@ int main(void)
     }
 
     fclose(fp);
-    sleep(5);
     exit(0);
 }
