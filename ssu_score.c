@@ -729,6 +729,9 @@ double score_student(int fd, char *id)
 			} else if (result == ERROR) {
 				score += ERROR_PENALTY;
 				sprintf(tmp, "%.2f,", (double) ERROR_PENALTY);
+			} else if (result == OVER) {
+				score += OVER_PENALTY;
+			   	sprintf(tmp, "%.2f,", (double) OVER_PENALTY);	
 			} else if(result < 0){
 				score = score + score_table[i].score + result;
 				sprintf(tmp, "%.2f,", score_table[i].score + result);
@@ -954,7 +957,7 @@ double score_program(char *id, char *filename)
 		return false;
 
 	// 5초 페널티
-	if (result != true)
+	if (result == OVER)
 		return result;
 
 	if(compile < 0)
@@ -1105,7 +1108,9 @@ double check_error_warning(char *filename)
  프로그램 실행
  @param id 학생 아이디
  @param filename 문제 이름
- @return
+ @return 1: 정답
+ 	 0: 오답 
+	 5(OVER): 시간초과
  */
 int execute_program(char *id, char *filename)
 {
@@ -1149,7 +1154,7 @@ int execute_program(char *id, char *filename)
 		if(difftime(end, start) >= OVER){
 			kill(pid, SIGKILL);
 			close(fd);
-			return OVER_PENALTY;
+			return OVER;
 		}
 	}
 

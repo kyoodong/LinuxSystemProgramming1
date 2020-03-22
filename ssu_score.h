@@ -26,13 +26,13 @@
 	#define WARNING -0.1
 #endif
 #ifndef ERROR
-	#define ERROR -987654321 
+	#define ERROR 6 
 #endif
 #ifndef ERROR_PENALTY
 	#define ERROR_PENALTY -50
 #endif
 #ifndef OVER_PENALTY
-	#define OVER_PENALTY 0
+	#define OVER_PENALTY -500
 #endif
 
 #define FILELEN 512
