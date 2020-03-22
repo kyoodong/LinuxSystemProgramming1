@@ -552,7 +552,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 		}
 		
 		// 좌우 공백 제거
-		strcpy(tokens[row], ltrim(rtrim(tokens[row])));
+		if (row >= 0)
+			strcpy(tokens[row], ltrim(rtrim(tokens[row])));
 
 		// 현재 row에 토큰이 문자나 숫자로 끝나면서 (직전 토큰이 선언문이거나 문자가 있거나 .으로 끝났)을때
 		if(row > 0 && is_character(tokens[row][strlen(tokens[row]) - 1])

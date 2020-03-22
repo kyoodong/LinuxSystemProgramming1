@@ -90,6 +90,20 @@ int main() {
 			if (s == NULL && strcmp(buffer1, trim(buffer2))) {
 				wrongList[j][wrongCountList[j]++] = i;
 			} else if (s != NULL) {
+				if (s > buffer1) {
+					for (int k = 1; s - k >= buffer1; k++) {
+						if (*(s - k) == ':')
+							break;
+						if (*(s - k) != ' ' && *(s - k) != '\n' && *(s - k) != '\t') {
+							wrongList[j][wrongCountList[j]++] = i;
+							break;
+						}
+					}
+				}
+
+				if (wrongCountList[j] > 0 && wrongList[j][wrongCountList[j] - 1] == i)
+					continue;
+
 				s += strlen(trim(buffer2));
 				while (1) {
 					if (*s == '\0' || *s == ':')

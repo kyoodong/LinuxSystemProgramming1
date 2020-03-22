@@ -26,10 +26,13 @@
 	#define WARNING -0.1
 #endif
 #ifndef ERROR
-	#define ERROR 0
+	#define ERROR 6 
+#endif
+#ifndef ERROR_PENALTY
+	#define ERROR_PENALTY -50
 #endif
 #ifndef OVER_PENALTY
-	#define OVER_PENALTY 0
+	#define OVER_PENALTY -500
 #endif
 
 #define FILELEN 512
@@ -54,7 +57,7 @@ double score_student(int fd, char *id);
 void write_first_row(int fd);
 
 char *get_answer(int fd, char *result);
-int score_blank(char *id, char *filename);
+int score_blank(char *id, char * const filename);
 double score_program(char *id, char *filename);
 double compile_program(char *id, char *filename);
 int execute_program(char *id, char *filname);

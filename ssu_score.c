@@ -711,22 +711,28 @@ double score_student(int fd, char *id)
 				continue;
 			
 			// .txt 파일인 경우
-			if(type == TEXTFILE)
+			if(type == TEXTFILE) {
 				result = score_blank(id, score_table[i].qname);
-			
+			}
 			// .c 파일인 경우
-			else if(type == CFILE)
+			else if(type == CFILE) {
 				result = score_program(id, score_table[i].qname);
+			}
 		}
-
+		
 		if(result == false)
 			write(fd, "0,", 2);
 		else{
 			if(result == true){
 				score += score_table[i].score;
 				sprintf(tmp, "%.2f,", score_table[i].score);
-			}
-			else if(result < 0){
+			} else if (result == ERROR) {
+				score += ERROR_PENALTY;
+				sprintf(tmp, "%.2f,", (double) ERROR_PENALTY);
+			} else if (result == OVER) {
+				score += OVER_PENALTY;
+			   	sprintf(tmp, "%.2f,", (double) OVER_PENALTY);	
+			} else if(result < 0){
 				score = score + score_table[i].score + result;
 				sprintf(tmp, "%.2f,", score_table[i].score + result);
 			}
@@ -801,7 +807,7 @@ char *get_answer(int fd, char *result)
  @param filename 채점할 답안 파일 경로
  @return
  */
-int score_blank(char *id, char *filename)
+int score_blank(char *id, char * const filename)
 {
 	char tokens[TOKEN_CNT][MINLEN];
 	node *std_root = NULL, *ans_root = NULL;
@@ -852,12 +858,6 @@ int score_blank(char *id, char *filename)
 		close(fd_std);
 		return false;
 	}
-
-	/*
-	for (int t = 0; tokens[t][0] != '\0'; t++) {
-		printf("%d = %s\n", t, tokens[t]);
-	}
-	*/
 
 	idx = 0;
 	std_root = make_tree(std_root, tokens, &idx, 0);
@@ -949,7 +949,7 @@ double score_program(char *id, char *filename)
 
 	// 컴파일 점수는 따로 감점해야함
 	if (compile == ERROR)
-		return compile;
+		return ERROR;
 	
 	result = execute_program(id, filename);
 
@@ -957,7 +957,7 @@ double score_program(char *id, char *filename)
 		return false;
 
 	// 5초 페널티
-	if (result != true)
+	if (result == OVER)
 		return result;
 
 	if(compile < 0)
@@ -1082,7 +1082,6 @@ double compile_program(char *id, char *filename)
  @param filename 에러 로그 파일
  @return ERROR : 에러가 하나라도 있는 경우
 		 n : warning의 갯수
- @TODO: 왜 리턴이 double인가
  */
 double check_error_warning(char *filename)
 {
@@ -1109,7 +1108,9 @@ double check_error_warning(char *filename)
  프로그램 실행
  @param id 학생 아이디
  @param filename 문제 이름
- @return
+ @return 1: 정답
+ 	 0: 오답 
+	 5(OVER): 시간초과
  */
 int execute_program(char *id, char *filename)
 {
@@ -1153,7 +1154,7 @@ int execute_program(char *id, char *filename)
 		if(difftime(end, start) >= OVER){
 			kill(pid, SIGKILL);
 			close(fd);
-			return OVER_PENALTY;
+			return OVER;
 		}
 	}
 

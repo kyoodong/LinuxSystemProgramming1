@@ -1,1 +1,1 @@
-size = BUFFER_SIZ
+1024 = size
