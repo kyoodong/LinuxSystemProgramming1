@@ -26,7 +26,10 @@
 	#define WARNING -0.1
 #endif
 #ifndef ERROR
-	#define ERROR -50 
+	#define ERROR -987654321 
+#endif
+#ifndef ERROR_PENALTY
+	#define ERROR_PENALTY -50
 #endif
 #ifndef OVER_PENALTY
 	#define OVER_PENALTY 0

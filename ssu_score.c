@@ -719,15 +719,17 @@ double score_student(int fd, char *id)
 				result = score_program(id, score_table[i].qname);
 			}
 		}
-
+		
 		if(result == false)
 			write(fd, "0,", 2);
 		else{
 			if(result == true){
 				score += score_table[i].score;
 				sprintf(tmp, "%.2f,", score_table[i].score);
-			}
-			else if(result < 0){
+			} else if (result == ERROR) {
+				score += ERROR_PENALTY;
+				sprintf(tmp, "%.2f,", (double) ERROR_PENALTY);
+			} else if(result < 0){
 				score = score + score_table[i].score + result;
 				sprintf(tmp, "%.2f,", score_table[i].score + result);
 			}
@@ -854,12 +856,6 @@ int score_blank(char *id, char * const filename)
 		return false;
 	}
 
-	/*
-	for (int t = 0; tokens[t][0] != '\0'; t++) {
-		printf("%d = %s\n", t, tokens[t]);
-	}
-	*/
-
 	idx = 0;
 	std_root = make_tree(std_root, tokens, &idx, 0);
 
@@ -950,7 +946,7 @@ double score_program(char *id, char *filename)
 
 	// 컴파일 점수는 따로 감점해야함
 	if (compile == ERROR)
-		return compile;
+		return ERROR;
 	
 	result = execute_program(id, filename);
 
@@ -1083,7 +1079,6 @@ double compile_program(char *id, char *filename)
  @param filename 에러 로그 파일
  @return ERROR : 에러가 하나라도 있는 경우
 		 n : warning의 갯수
- @TODO: 왜 리턴이 double인가
  */
 double check_error_warning(char *filename)
 {
