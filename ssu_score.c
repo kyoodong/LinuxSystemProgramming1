@@ -711,12 +711,13 @@ double score_student(int fd, char *id)
 				continue;
 			
 			// .txt 파일인 경우
-			if(type == TEXTFILE)
+			if(type == TEXTFILE) {
 				result = score_blank(id, score_table[i].qname);
-			
+			}
 			// .c 파일인 경우
-			else if(type == CFILE)
+			else if(type == CFILE) {
 				result = score_program(id, score_table[i].qname);
+			}
 		}
 
 		if(result == false)
@@ -801,7 +802,7 @@ char *get_answer(int fd, char *result)
  @param filename 채점할 답안 파일 경로
  @return
  */
-int score_blank(char *id, char *filename)
+int score_blank(char *id, char * const filename)
 {
 	char tokens[TOKEN_CNT][MINLEN];
 	node *std_root = NULL, *ans_root = NULL;
