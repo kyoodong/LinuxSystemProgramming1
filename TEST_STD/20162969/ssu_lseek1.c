@@ -21,7 +21,7 @@ int main(void)
 	fprintf(stderr,"lseek error\n");
 	exit(1);//실패시 
     }
-    printf("The size of <%s> is %ldbytes",fname, fsize);
+    printf("The size of <%s> is %ldbytes.\n",fname, fsize);
 
     exit(0);//성공시
 }
