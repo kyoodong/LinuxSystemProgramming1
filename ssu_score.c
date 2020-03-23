@@ -1284,6 +1284,8 @@ int get_file_type(char *filename)
 {
 	// .을 문자열 뒤에서부터 검색
 	char *extension = strrchr(filename, '.');
+	if (extension == NULL)
+		return -1;
 
 	if(!strcmp(extension, ".txt"))
 		return TEXTFILE;
