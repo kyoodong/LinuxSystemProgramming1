@@ -1099,7 +1099,7 @@ double check_error_warning(char *filename)
 		if(!strcmp(tmp, "error:"))
 			return ERROR;
 		else if(!strcmp(tmp, "warning:"))
-			warning += WARNING;
+			warning = WARNING;
 	}
 
 	return warning;
