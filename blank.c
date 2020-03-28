@@ -188,21 +188,26 @@ void compare_tree(node *root1,  node *root2, int *result)
  */
 int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 {
+	// 일반적으로 start와 end를 하나의 토큰으로 봄
+	// start는 보통 피연산자이나 연산자일 때도 있음
+	// end는 start와 가장 가까운(오른쪽만 고려) 연산자이거나 파일의 끝임
 	char *start, *end;
 	char tmp[BUFLEN];
-	char str2[BUFLEN];
-	char *op = "(),;><=!|&^/+-*\""; 
+	char *op = "(),;><=!|&^/+-*\"";
+	
+	// 토큰 인덱스
 	int row = 0;
 	int i;
  	int isPointer;
 	int lcount, rcount;
 	int p_str;
 	
+	// 토큰 배열을 다 0으로 초기화
 	clear_tokens(tokens);
 
 	start = str;
 	
-	// 선언문 또는 일반 구문인지 확인
+	// 선언문인지 일반 구문인지 확인
 	// 0인 경우는 잘못된 입력
 	if(is_typeStatement(str) == 0) 
 		return false;	
@@ -222,14 +227,17 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 					return false;
 
 				// ++ 또는 -- 를 건너 뛰고 공백이 아닌 첫 번째 글자가 알파벳 또는 숫자인 경우
+				// 즉 ++이나 --뒤에 변수가 오는 상황, ++a, --b 등
 				if(is_character(*ltrim(start + 2))){
-					// 이 전 토큰의 마지막 문자가 character 이면 잘못됨
+					// 이 전 토큰의 마지막 문자가 character(변수) 이면 잘못됨
 					// 예를 들어서 a++ b 이런거
 					if(row > 0 && is_character(tokens[row - 1][strlen(tokens[row - 1]) - 1]))
 						return false;
 
 					// 또 다른 연산자가 있는지 확인
 					end = strpbrk(start + 2, op);
+					
+					// 더 이상 연산자가 없으면 end 는 문자열 맨 끝으로 이동
 					if(end == NULL)
 						end = &str[strlen(str)];
 					
@@ -294,13 +302,13 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 			// 포인터 멤버 변수 연산자
 			else if(!strncmp(start, "->", 2))
 			{
+				// end 를 -> 이후의 최초의 연산자 혹은 구문의 맨 끝으로 이동시킴
 				end = strpbrk(start + 2, op);
-
 				if(end == NULL)
 					end = &str[strlen(str)];
 
 				// -> 연산자와 -> 이후에 등장하는 최초의 피연산자를 토큰에 추가
-				// @TODO: 여기는 또 피연산자 두 개 이상인거 안잡네
+				// @TODO: 여기는 또 피연산자 두 개 이상인거 안잡네 이런거..? a->b c + d;
 				while(start < end){
 					if(*start != ' ')
 						strncat(tokens[row - 1], start, 1);
@@ -316,7 +324,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 				// 0 번째 토큰을 입력할 차례거나 직전 토큰에 연산자가 있는 경우
 				// 주소값을 의미하는 &
 				if(row == 0 || (strpbrk(tokens[row - 1], op) != NULL)){
-					// & 이후의 피연산자를 찾는 로직
+					// end를 &이후의 연산자 혹은 구문의 맨 끝으로 지정함으로써
+					// 결국 & 이후의 피연산자를 찾는 로직
 					end = strpbrk(start + 1, op);
 					if(end == NULL)
 						end = &str[strlen(str)];
@@ -328,7 +337,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 					// 다음 연산자 직전까지이든 문자열의 맨 끝이든 이 while 문은 피연산자만 다루게 됨
 					// & 연산자 이후의 피연산자를 토큰에 이어 붙임
 					while(start < end){
-						// && 같이 &가 두 번 연속 등장하는거 막는건가?
+						// & 이후에 어떤 문자가 추가된 상태에서 공백을 만났다는건 두 개 이상의 피연산자를 의미함?
+						// @TODO: 이게 피연산자와 연산자 사이에 공백이 두 개가 있어도 false를 리턴하는데 고칠 필요가 있어보임
 						if(*(start - 1) == ' ' && tokens[row][strlen(tokens[row]) - 1] != '&')
 							return false;
 						else if(*start != ' ')
@@ -346,6 +356,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 				
 			}
 			// 연산자가 *인 경우
+			// 포인터이거나 곱하기 연산임
+			// 단 포인터도 선언형일수도 있고, 포인터 값 조회형일수도 있음
 		  	else if(*end == '*')
 			{
 				isPointer=0;
@@ -354,7 +366,7 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 				{
 					// 직전 토큰에 데이터 형을 의미하는 토큰이 있다면 이는 포인터 변수 선언임
 					// 예) int*
-					// @TODO: row-- 왜 안하지?
+					// 직전 토큰에 *을 이어붙여줌
 					for(i = 0; i < DATATYPE_SIZE; i++) {
 						if(strstr(tokens[row - 1], datatype[i]) != NULL){
 							strcat(tokens[row - 1], "*");
@@ -397,11 +409,11 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 					start += (end - start);
 				}
 
-				// 포인터
+				// 포인터 값 조회 연산자
 				// 예) *p = 10;
 			 	else if(row == 0)
 				{
-					// 더이상 연산자가 없으면 토큰에 start 추가
+					// 더이상 연산자가 없으면 토큰에 * 추가
 					if((end = strpbrk(start + 1, op)) == NULL){
 						strncat(tokens[row], start, 1);
 						start += 1;
@@ -415,10 +427,11 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 								return false;
 							else if(*start != ' ')
 								strncat(tokens[row], start, 1);
-							start++;	
+							start++;
 						}
 						
 						// 누적한 피연산자가 모두 *이면 취소
+						// ??
 						if(all_star(tokens[row]))
 							row--;
 					}
@@ -429,7 +442,7 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 				lcount = 0;
 				rcount = 0;
 				
-				// 직전 토큰이 & 도는 * 인 경우
+				// 직전 토큰이 & 또는 * 인 경우
 				if(row>0 && (strcmp(tokens[row - 1],"&") == 0 || strcmp(tokens[row - 1], "*") == 0)){
 					// 연속된 '('의 갯수를 셈
 					while(*(end + lcount + 1) == '(')
@@ -481,6 +494,7 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 			{
 				end = strpbrk(start + 1, "\"");
 				
+				// 대응되는 "가 없다면 잘못된 수식임
 				if(end == NULL)
 					return false;
 
@@ -490,7 +504,7 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 				}
 			}
 
-			// 기타 알파벳, 숫자, -, +, /, %, | 등
+			// 기타 알파벳, 숫자, -, +, /, %, |, ',' 등
 			else{
 				if(row > 0 && !strcmp(tokens[row - 1], "++"))
 					return false;
@@ -523,15 +537,18 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 			if(row > 1 && all_star(tokens[row - 1]) && !is_character(tokens[row - 2][strlen(tokens[row - 2]) - 1]))
 				row--;
 
+			// @TODO: 꼭 row가 1일때만 이래야되는건가?
 			if(row == 1 && all_star(tokens[row - 1]))
 				row--;
 
 			// 피연산자 토큰에 추가
-			// student.id 이런거 묶어서 처리
+			// 구조체변수, student.id 이런거 묶어서 처리
 			for(i = 0; i < end - start; i++){
 				if(i > 0 && *(start + i) == '.'){
 					strncat(tokens[row], start + i, 1);
 
+					// 공백 제거
+					// student.   id -> student.id
 					while( *(start + i +1) == ' ' && i< end - start )
 						i++; 
 				}
@@ -544,6 +561,7 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 					strncat(tokens[row], start + i, 1);
 			}
 
+			// 애초에 공백으로 시작하는 문자열이였다면 공백을 다 무시해버림
 			if(start[0] == ' ') {
 				start += i;
 				continue;
@@ -753,10 +771,11 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 		else if(!strcmp(tokens[*idx], "("))
 		{
 			// 직전 토큰이 연산자 또는 ','가 아닐 때 새로운 트리를 만들어서 cur 에 이어 붙여줌
+			// 함수 호출 같은 걸 생각해볼 수 있음 printf("%d", 1);
 			if(*idx > 0 && !is_operator(tokens[*idx - 1]) && strcmp(tokens[*idx - 1], ",") != 0){
 				fstart = true;
-
-				// @TODO: 두 번 이상 도는 경우가 있나?
+				
+				// 함수 인자들을 쭉 리스트에 넣어줌
 				while(1)
 				{
 					*idx += 1;
@@ -767,7 +786,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 					new = make_tree(NULL, tokens, idx, parentheses + 1);
 					
 					if(new != NULL){
-						// 최초의 자식이면 child_head 에 바로 넣어주고
+						// 최초의 자식(첫 번째 인자)이면 child_head 에 바로 넣어주고
 						if(fstart == true){
 							cur->child_head = new;
 							new->parent = cur;
@@ -787,6 +806,9 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 						break;
 				}
 			}
+			
+			// 함수가 아닌 피연산자를 고려한 괄호
+			// 예를 들면 a + (b + c)
 			else{
 				*idx += 1;
 	
@@ -798,6 +820,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 					cur = new;
 
 				// 현재 노드와 새로운 노드가 이름이 같은 상황
+				// 즉 연산자가 같다.
 				else if(!strcmp(new->name, cur->name)){
 					if(!strcmp(new->name, "|") || !strcmp(new->name, "||") 
 						|| !strcmp(new->name, "&") || !strcmp(new->name, "&&"))
@@ -805,6 +828,10 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 						// new 의 자식 노드(첫 번째 피연산자)를 cur의 맨 끝노드의 next로 추가
 						cur = get_last_child(cur);
 
+						// new->child_head 가 널인 경우는 거의 없음
+						// 피연산자가 없는 경우라서..
+						// | || & && 는 그 순서가 중요하지 않아서 피연산자를 쭉 이어서 붙여줄 수 있음
+						// 이후 피연산자의 순서를 돌려가며 두 트리가 같은지 비교할 때 용이함
 						if(new->child_head != NULL){
 							new = new->child_head;
 
@@ -878,15 +905,19 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 					|| !strcmp(tokens[*idx], "|") || !strcmp(tokens[*idx], "&") 
 					|| !strcmp(tokens[*idx], "+") || !strcmp(tokens[*idx], "*"))
 			{
+				// @TODO: ??
 				if(is_operator(cur->name) == true && !strcmp(cur->name, tokens[*idx]))
 					operator = cur;
 		
 				else
 				{
 					new = create_node(tokens[*idx], parentheses);
+					// new에게 영향을 주는 최상위 연산자
+					// @TODO: 뭔가 문제 있음 a * b + c * d + e 랑 c * d + a * b + e 가 정답처리 안됨
 					operator = get_most_high_precedence_node(cur, new);
 
 					// root
+					// @TODO: 어차피 모든 경우의 수가 이런 경우라서 없애도 될듯
 					if(operator->parent == NULL && operator->prev == NULL){
 						// operator 보다 new의 우선순위가 낮다면 operator를 new의 아래에 배치
 						if(get_precedence(operator->name) < get_precedence(new->name)){
@@ -896,14 +927,14 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 						// operator 보다 new가 우선순위가 높고, operator의 child_head가 존재한다면 아랫쪽에 배치
 						else if(get_precedence(operator->name) > get_precedence(new->name))
 						{
+							// @TODO: operator->child_head 가 널인 경우가 있나? 피연산자인 경우?
 							if(operator->child_head != NULL){
 								operator = get_last_child(operator);
 								cur = insert_node(operator, new);
 							}
 						}
 						
-						// 우선순위가 같은 경우
-						// @TODO: new 노드 버리는데?
+						// 우선순위가 같은 연산자의 경우 child_head의 next 에 그 피연산자를 이어붙임
 						else
 						{
 							operator = cur;
@@ -923,6 +954,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 							if(strcmp(operator->name, tokens[*idx]) != 0)
 								operator = operator->parent;
 
+							// // @TODO: 아닌 경우에 insert라도 해야되는거 아닌가..?
 							if(operator != NULL){
 								if(!strcmp(operator->name, tokens[*idx]))
 									cur = operator;
@@ -930,6 +962,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 						}
 					}
 
+					// 이 경우에 도달하는 경우는 없음
 					else
 						cur = insert_node(operator, new);
 				}
@@ -951,7 +984,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 					if(operator->parentheses > new->parentheses)
 						cur = insert_node(operator, new);
 
-					// 루트
+					// @TODO: 이런 경우밖에 없어서 없애도 될듯?
 					else if(operator->parent == NULL && operator->prev ==  NULL) {
 				
 						// new 의 우선순위가 더 높은 상태
@@ -969,6 +1002,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 							cur = insert_node(operator, new);
 					}
 	
+					// @TODO: 이런 경우 또한 없음
 					else
 						cur = insert_node(operator, new);
 				}
@@ -1183,13 +1217,14 @@ node *get_high_precedence_node(node *cur, node *new)
 }
 
 /**
- cur 트리 중에서 우선순위가 가장 높은 연산자 노드를 찾아주는 함수
+ cur 트리 중에서 new 노드에 영향을 주는 최상위 연산자를 찾아주는 함수
  @param cur 탐색 노드 중 최상위 노드
  @param new 새로운 연산자 노드
- @return 우선순위가 가장 높은 연산자 노드
+ @return 최상위 연산자 노드
  */
 node *get_most_high_precedence_node(node *cur, node *new)
 {
+	// 기존 트리 중에서 new 보다 우선순위가 높은 최초의 연산자
 	node *operator = get_high_precedence_node(cur, new);
 	node *saved_operator = operator;
 
@@ -1702,6 +1737,7 @@ void remove_space(char *str)
  @return	0 여는 괄호의 갯수와 닫는 괄호의 갯수가 다를 때
 			1 여는 괄호의 갯수와 닫는 괄호의 갯수가 같을 때
  @TODO: 갯수만 파악해서 정말 validation check가 가능한가? 예를 들어 ")a += 10(" 이런거 ㅇㅇ
+ stack 구조로 만들어서 그 순서도 파악하는게 좋지 않을까 싶다.
  */
 int check_brackets(char *str)
 {
@@ -1732,6 +1768,10 @@ int check_brackets(char *str)
 		return 1;
 }
 
+/**
+ 어디에도 사용되지 않는 함수
+ @TODO: 지우자
+ */
 int get_token_cnt(char tokens[TOKEN_CNT][MINLEN])
 {
 	int i;
