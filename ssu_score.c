@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 #include "ssu_score.h"
 #include "blank.h"
-
 extern struct ssu_scoreTable score_table[QNUM];
 extern char id_table[SNUM][10];
 
@@ -21,10 +20,19 @@ struct ssu_scoreTable score_table[QNUM];
 char id_table[SNUM][10];
 char wrong_id_table[SNUM][10];
 
+// 학생 답안 디렉토리 path
 char stuDir[BUFLEN];
+
+// 정답 답안 디렉토리 path
 char ansDir[BUFLEN];
+
+// 에러 출력 디렉토리 path
 char errorDir[BUFLEN];
+
+// 스레드가 필요한 소스 파일 리스트
 char threadFiles[ARGNUM][FILELEN];
+
+
 char cIDs[ARGNUM][FILELEN];
 
 int eOption = false;
@@ -314,6 +322,72 @@ int check_option(int argc, char *argv[])
 	return true;
 }
 
+/**
+ 학생 점수 출력해주는 함수
+ @param ids 점수를 출력할 학생 리스트
+ */
+void do_cOption(char (*ids)[FILELEN])
+{
+	FILE *fp;
+	char tmp[BUFLEN];
+	char *p, *saved;
+
+	// score.csv 파일에서 학새의 점수를 읽기 위해 파일을 열어둠
+	if((fp = fopen("score.csv", "r")) == NULL){
+		fprintf(stderr, "file open error for score.csv\n");
+		return;
+	}
+
+	// score.csv 파일의 첫줄은 문제 목록(column name)이므로 한 줄 읽어버림
+	fscanf(fp, "%s\n", tmp);
+
+	// 본격 학생 점수 파싱
+	while(fscanf(fp, "%s\n", tmp) != EOF)
+	{
+		// 현재 tmp = 20162489,1.0,10.0, ... ,2.0
+		// 따라서 p 에는 20162489가 들어있음
+		p = strtok(tmp, ",");
+
+		// tmp = 20162489'\0'1.0,10.0 ... ,2.0
+		// tmp가 점수를 출력할 학생 리스트에 없으면 다음 학생으로 넘어감
+		if(!is_exist(ids, tmp))
+			continue;
+
+		// 점수 출력
+		printf("%s's score : ", tmp);
+
+		// 학생의 점수가 쭉 있고, 맨 끝에 sum 이 있으므로 끝까지 읽어내면 최종적으로 p 에는 총합이 저장되게 됨
+		while((p = strtok(NULL, ",")) != NULL)
+			saved = p;
+
+		// 점수 총합 출력
+		printf("%s\n", saved);
+	}
+	fclose(fp);
+}
+
+/**
+ target 학생이 학생리스트(src) 안에 있는지 확인해주는 함수
+ @param src 학생 리스트
+ @param target 검색 학생
+ @return true : 학생이 있는 경우
+		 false : 없는 경우, 테이블의 ARGNUM 번째 인덱스 이후에 있는 경우
+ */
+int is_exist(char (*src)[FILELEN], char *target)
+{
+	int i = 0;
+
+	while(1)
+	{
+		if(i >= ARGNUM)
+			return false;
+		else if(!strcmp(src[i], ""))
+			return false;
+		else if(!strcmp(src[i++], target))
+			return true;
+	}
+	return false;
+}
 
 /**
  점수 표를 작성하는 함수
@@ -371,8 +445,17 @@ void read_scoreTable(char *path)
  */
 void make_scoreTable(char *ansDir)
 {
+	// type : c파일인지, txt파일인지 결정
+	// num : 메뉴 선택
 	int type, num;
+	
+	// score : 문제 점수
+	// bscore : 빈칸 문제 채우기 점수
+	// pscore : 프로그래밍 문제 점수
+	// 결국 bscore나 pscore나 score가 될거임
 	double score, bscore, pscore;
+	
+	// 답안 디렉토리를 다 읽어들이기위한 변수
 	struct dirent *dirp, *c_dirp;
 	DIR *dp, *c_dp;
 	char tmp[BUFLEN];
@@ -425,7 +508,7 @@ void make_scoreTable(char *ansDir)
 	sort_scoreTable(idx);
 
 	// 모든 문제에 대해 각 문제별 점수 입력
-	// 1번 선택한 경우 그냥 for 문 막 돌면서 알아서 지정됨
+	// 1번 선택한 경우 빈칸 문제 몇점, 프로그램 문제 몇점 입력해두면 모든 문제에 대해 for 문 돌면서 일괄 지정됨
 	// 2번 선택한 경우 문제 이름 출력되면 배점을 입력해줘야함
 	for(i = 0; i < idx; i++)
 	{
@@ -525,6 +608,7 @@ void set_idTable(char *stuDir)
 			continue;
 	}
 
+	// 정렬
 	sort_idTable(num);
 }
 
@@ -564,7 +648,9 @@ void sort_scoreTable(int size)
 	// 버블 정렬
 	for(i = 0; i < size - 1; i++){
 		for(j = 0; j < size - 1 - i; j++){
-
+			// get_qname_number 덕분에 1, 10, 11, 2, 22 순으로 즉 단순 텍스트 순으로 정렬되는 것이 아니라
+			// 1, 2, 3, 10, 11 같이 int형 크기로 정렬됨
+			// 물론 1-2, 1-3 같이 서브 문제를 정렬하는 것이 주된 목적
 			get_qname_number(score_table[j].qname, &num1_1, &num1_2);
 			get_qname_number(score_table[j+1].qname, &num2_1, &num2_2);
 
@@ -658,17 +744,18 @@ void score_students()
 	// 일종의 표 형태를 생각하면 좋음. 표 맨 위에 어떤 컬럼이 있는지 명시하듯 그 작업을 한 것
 	write_first_row(fd);
 
-	// 모든 학번을 두 번째 행에 쭉 명시
-	// 예) 20162489, 20162490, 20162491, ...
-	// 그러면서
+	// 모든 학생들의 점수를 기입
 	for(num = 0; num < size; num++)
 	{
 		if(!strcmp(id_table[num], ""))
 			break;
 
+		// 맨 처음 column에 학번을 기입
 		sprintf(tmp, "%s,", id_table[num]);
 		write(fd, tmp, strlen(tmp)); 
 
+		// 이후 해당 학번의 학생의 점수를 기입
+		// score_student 함수 내부적으로 fd에 성적을 잘 입력한 뒤 그 합계를 리턴해줌
 		score += score_student(fd, id_table[num]);
 	}
 
@@ -710,12 +797,12 @@ double score_student(int fd, char *id)
 			if((type = get_file_type(score_table[i].qname)) < 0)
 				continue;
 			
-			// .txt 파일인 경우
-			if(type == TEXTFILE) {
+			// .txt 파일인 경우 : 빈칸 채우기 문제
+			if(type == TEXTFILE)
 				result = score_blank(id, score_table[i].qname);
-			}
-			// .c 파일인 경우
-			else if(type == CFILE) {
+			
+			// .c 파일인 경우 : 프로그래밍 문제
+			else if(type == CFILE)
 				result = score_program(id, score_table[i].qname);
 			}
 		}
@@ -752,7 +839,7 @@ double score_student(int fd, char *id)
  첫 번째 행을 작성하는 함수
  @param fd score.csv 의 file descriptor
  첫 번째 행에 column name 을 명시해주는 작업이 이루어짐
- 예) ,1-1, 1-2, 1-3, 2-1, 2-2, sum
+ 예) ,1-1,1-2,1-3,2-1,2-2,sum
  */
 void write_first_row(int fd)
 {
@@ -760,13 +847,15 @@ void write_first_row(int fd)
 	char tmp[BUFLEN];
 	int size = sizeof(score_table) / sizeof(score_table[0]);
 
-	// ?? 왜 ,로 시작하는거지
+	// csv 파일을 엑셀로 열었을 때 첫 번재 컬럼은 학번에 해당하므로 맨 앞칸은 비워둠
+	// @TODO: 학번, 이런식으로 하면 더 보기좋을텐데..
 	write(fd, ",", 1);
 
 	for(i = 0; i < size; i++){
 		if(score_table[i].score == 0)
 			break;
 		
+		// 문제 번호들 쭉 적어줌
 		sprintf(tmp, "%s,", score_table[i].qname);
 		write(fd, tmp, strlen(tmp));
 	}
@@ -787,14 +876,17 @@ char *get_answer(int fd, char *result)
 	memset(result, 0, BUFLEN);
 	
 	// 파일의 끝 또는 :를 만날때까지 한 글자씩 읽음
+	// 아마 처음에는 정답 답안 파일도 읽어내려고 한듯?
 	while(read(fd, &c, 1) > 0)
 	{
-		// 학생 답안 파일에 : 은 왜 있는걸까~?
+		// 학생 답안 파일에 : 은 왜 있는걸까?
 		if(c == ':')
 			break;
 		
 		result[idx++] = c;
 	}
+	
+	// 문자열 맨 마지막에 줄바꿈 문자가 있다면 없애줌
 	if(result[strlen(result) - 1] == '\n')
 		result[strlen(result) - 1] = '\0';
 
@@ -805,13 +897,15 @@ char *get_answer(int fd, char *result)
  빈칸 채우기 문제 채점하는 함수
  @param id 학번
  @param filename 채점할 답안 파일 경로
- @return
+ @return 1: 잘 채점된 경우 = 문제 배점대로 채점
+		 0: 채점에 실패한 경우 = 0점
  */
 int score_blank(char *id, char * const filename)
 {
+	// 답안이 토큰으로 쪼개어 저장될 변수
 	char tokens[TOKEN_CNT][MINLEN];
 	node *std_root = NULL, *ans_root = NULL;
-	int idx, start;
+	int idx;
 	char tmp[BUFLEN];
 	char s_answer[BUFLEN], a_answer[BUFLEN];
 	char qname[FILELEN];
@@ -825,13 +919,16 @@ int score_blank(char *id, char * const filename)
 	memset(qname, 0, sizeof(qname));
 	memcpy(qname, filename, strlen(filename) - strlen(strrchr(filename, '.')));
 
+	// 예) tmp = STD_DIR/20162489/1-1
 	sprintf(tmp, "%s/%s/%s", stuDir, id, filename);
 	fd_std = open(tmp, O_RDONLY);
 	
 	// strcpy 왜한거지??
+	// @TODO: get_answer s_answer 에 값을 잘 넣어주고 있어서 strcpy 는 필요 없어보임
 	strcpy(s_answer, get_answer(fd_std, s_answer));
 
-	if(!strcmp(s_answer, "")){
+	// 학생 답안이 빈 문자열이라면 바로 종료
+	if(!strcmp(s_answer, "")) {
 		close(fd_std);
 		return false;
 	}
@@ -859,6 +956,7 @@ int score_blank(char *id, char * const filename)
 		return false;
 	}
 
+	// 트리 생성
 	idx = 0;
 	std_root = make_tree(std_root, tokens, &idx, 0);
 
@@ -881,11 +979,14 @@ int score_blank(char *id, char * const filename)
 
 		strcpy(a_answer, ltrim(rtrim(a_answer)));
 
+		// 학생 답안에는 ;가 없는데 정답 답안에는 ;가 있으면 오답
 		if(has_semicolon == false){
 			if(a_answer[strlen(a_answer) -1] == ';')
 				continue;
 		}
 
+		// 학생 답안에는 ;가 있는데 정답 답안에는 ;가 없으면 오답
+		// 정답 답안에도 ;가 있으면 ;는 없애줌
 		else if(has_semicolon == true)
 		{
 			if(a_answer[strlen(a_answer) - 1] != ';')
