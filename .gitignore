@@ -1,2 +1,4 @@
 *.stdexe
 *.exe
+*.stdout
+*.csv
