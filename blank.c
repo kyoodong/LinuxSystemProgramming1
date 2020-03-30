@@ -701,8 +701,8 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 	// 예) "int a = 10;" 이런 구문이였다면
 	// 토큰은 tokens[0] = "int"
 	// tokens[1] = "a"
-	// tokens[2] = "="
-	// 이었을 텐데 이를 tokens[0] = "int a =" 으로 바꿈
+	// tokens[2] = "=" ...
+	// 이었을 텐데 이를 tokens[0] = "int a = 10" 으로 바꿈
 	if(is_typeStatement(tokens[0]) == 2 || strstr(tokens[0], "extern") != NULL){
 		for(i = 1; i < TOKEN_CNT; i++){
 			if(strcmp(tokens[i],"") == 0)  
@@ -770,6 +770,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 		else if(!strcmp(tokens[*idx], "("))
 		{
 			// 직전 토큰이 연산자 또는 ','가 아닐 때 새로운 트리를 만들어서 cur 에 이어 붙여줌
+			// ( 전 토큰이 연산자가 아닌 경우는 함수 호출밖에 없음
 			// 함수 호출 같은 걸 생각해볼 수 있음 printf("%d", 1);
 			if(*idx > 0 && !is_operator(tokens[*idx - 1]) && strcmp(tokens[*idx - 1], ",") != 0){
 				fstart = true;
@@ -858,6 +859,8 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 						}
 						
 						// 다음 연산자가 우선순위가 더 높다면 현재의 연산자(new에 저장된 연산자)를 cur 맨 끝에 붙임
+						// 왜냐면 우선순위가 더 높은 연산자가 예정되어 있다면 그 연산자 보다는 현재 new 연산자가 무조건 먼저 처리되어야 하기 때문
+						// 이러면 피연산자간의 순서가 바뀌면 다른 결과가 나오는 경우임
 						if(get_precedence(tokens[*idx + i]) < get_precedence(new->name))
 						{
 							cur = get_last_child(cur);
@@ -865,6 +868,8 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 							new->prev = cur;
 							cur = new;
 						}
+						// 다음 연산자가 우선순위가 더 낮거다 같다면 || 와 마찬가지로 피연산자들을 합쳐줌
+						// 이러면 피연산자간의 순서가 바뀌어도 같은 연산식으로 처리가 가능하기 때문
 						else
 						{
 							cur = get_last_child(cur);
@@ -879,6 +884,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 							}
 						}
 					}
+					// 노드 트리를 통채로 붙여줌
 					else{
 						cur = get_last_child(cur);
 						cur->next = new;
@@ -887,24 +893,25 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 					}
 				}
 	
+				// cur와 new 가 다른 연산자인 경우에는 그냥 노드 트리를 통채로 붙여줌
 				else
 				{
 					cur = get_last_child(cur);
-
 					cur->next = new;
 					new->prev = cur;
-	
 					cur = new;
 				}
 			}
 		}
 		else if(is_operator(tokens[*idx]))
 		{
+			// 이 연산자들은 피연산자의 순서가 바뀌어도 무관하다는 특징이 있음
 			if(!strcmp(tokens[*idx], "||") || !strcmp(tokens[*idx], "&&")
 					|| !strcmp(tokens[*idx], "|") || !strcmp(tokens[*idx], "&") 
 					|| !strcmp(tokens[*idx], "+") || !strcmp(tokens[*idx], "*"))
 			{
 				// @TODO: ??
+				// 이런 경우는 없음
 				if(is_operator(cur->name) == true && !strcmp(cur->name, tokens[*idx]))
 					operator = cur;
 		
@@ -918,12 +925,12 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 					// root
 					// @TODO: 어차피 모든 경우의 수가 이런 경우라서 없애도 될듯
 					if(operator->parent == NULL && operator->prev == NULL){
-						// operator 보다 new의 우선순위가 낮다면 operator를 new의 아래에 배치
+						// operator 가 new 보다 우선순위가 높다면 operator를 new의 아래에 배치
 						if(get_precedence(operator->name) < get_precedence(new->name)){
 							cur = insert_node(operator, new);
 						}
 
-						// operator 보다 new가 우선순위가 높고, operator의 child_head가 존재한다면 아랫쪽에 배치
+						// operator 가 new 보다 우선순위가 낮고, operator의 child_head가 존재한다면 아랫쪽에 배치
 						else if(get_precedence(operator->name) > get_precedence(new->name))
 						{
 							// @TODO: operator->child_head 가 널인 경우가 있나? 피연산자인 경우?
@@ -933,7 +940,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 							}
 						}
 						
-						// 우선순위가 같은 연산자의 경우 child_head의 next 에 그 피연산자를 이어붙임
+						// 우선순위가 같은 연산자의 경우 그 피연산자를 연달아 이어붙임
 						else
 						{
 							operator = cur;
@@ -961,7 +968,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 						}
 					}
 
-					// 이 경우에 도달하는 경우는 없음
+					// @TODO: 이 경우에 도달하는 경우는 없음
 					else
 						cur = insert_node(operator, new);
 				}
@@ -1238,6 +1245,7 @@ node *get_most_high_precedence_node(node *cur, node *new)
 		else if(saved_operator->parent != NULL)
 			operator = get_high_precedence_node(saved_operator->parent, new);
 
+//		if (operators[saved_operator].precedence < operators[operator].precedence)
 		saved_operator = operator;
 	}
 	
@@ -1357,6 +1365,7 @@ int is_typeStatement(char *str)
 		// start 의 처음 3글자가 gcc로 시작하는지를 확인
 		strncpy(tmp2, start, strlen("gcc"));
 		
+		// 문자열 내에 gcc가 포함되어 있지만
 		// gcc로 시작하지 않는 경우
 		if(strcmp(tmp2,"gcc") != 0)
 			return 0;
@@ -1381,13 +1390,12 @@ int is_typeStatement(char *str)
 			// 결국 학생 답안의 맨 앞에 변수 타입을 명시한 경우, 2리턴
 			// 아닌 경우는 0리턴
 			// 애초에 맨 앞에 변수 타입이 적힌것이 아니었다면 아무일도 없음 계속 반복문 돌게됨
-			if(strcmp(tmp, datatype[i]) == 0)
-				// 이 경우는 최초의 start가 "  int a;" 이런 꼴이였던거? 같음
-				// 그래서 start[0] 이 공백일 때 한칸 띄웠음에도 공백이 남아있었다.
+			if(strcmp(tmp, datatype[i]) == 0) {
+				// 변수 타입이 문자열 내에 등장하지만 문자열 내 처음에 등장하는 것이 아니라면 잘못된 문자열
 				if(strcmp(tmp, tmp2) != 0)
 					return 0;
-				else
-					return 2;
+			}
+			return 2;
 		}
 	}
 	
@@ -1397,7 +1405,7 @@ int is_typeStatement(char *str)
 }
 
 /**
- 괄호에 둘러쌓인 타입 지정자를 찾아주는 함수 예) 형변환 long a = (long) b;
+ 괄호에 둘러쌓인 타입 지정자(형변환)를 찾아주는 함수 예) 형변환 long a = (long) b;
  @param tokens 토큰 테이블
  @return 1 이상의 정수 : 타입 지정자의 시작 토큰 인덱스
 		 -1 : 없는 경우
@@ -1508,8 +1516,8 @@ int reset_tokens(int start, char tokens[TOKEN_CNT][MINLEN])
 			}
 		}
 
-		// "unsigned"이면서 그 다음 토큰은 ')'인 경우 "unsigned)" 에 ')' 토큰 다음 토큰까지 이어 붙인 뒤 ')'토큰부터 한 칸씩 위로 끌어올림
-		// 즉 ')' 이거 다음 토큰은 token[start]와 token[start + 1] 두 개에 존재하게 됨
+		// "unsigned"이면서 그 다음 토큰은 ')'가 아닌 경우 "unsigned", 다음 토큰과 다다음 토큰까지 이어 붙인 뒤 다음 토큰부터 한 칸씩 위로 끌어올림
+		// @TODO: 다다음 토큰은 start 번째에도 start + 1번째에도 존재하게 되는데 맞는건가?
 		else if(!strcmp(tokens[start], "unsigned") && strcmp(tokens[start+1], ")") != 0) {		
 			strcat(tokens[start], " ");
 			strcat(tokens[start], tokens[start + 1]);		 
@@ -1523,13 +1531,13 @@ int reset_tokens(int start, char tokens[TOKEN_CNT][MINLEN])
 
 		// start 이후에 등장한 모든 ')' 토큰을 넘김
 		// 넘긴 횟수는 rcount 에 저장
-	 		j = start + 1;		   
-			while(!strcmp(tokens[j], ")")){
-					rcount ++;
-					if(j==TOKEN_CNT)
-							break;
-					j++;
-			}
+		j = start + 1;
+		while(!strcmp(tokens[j], ")")){
+				rcount ++;
+				if(j==TOKEN_CNT)
+						break;
+				j++;
+		}
 	
 		j = start - 1;
 		
