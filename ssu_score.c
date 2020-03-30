@@ -804,7 +804,6 @@ double score_student(int fd, char *id)
 			// .c 파일인 경우 : 프로그래밍 문제
 			else if(type == CFILE)
 				result = score_program(id, score_table[i].qname);
-			}
 		}
 		
 		if(result == false)
@@ -955,6 +954,15 @@ int score_blank(char *id, char * const filename)
 		close(fd_std);
 		return false;
 	}
+
+	/*
+	for (int i = 0; i < 100; i++) {
+		if (strlen(tokens[i]) == 0)
+			break;
+
+		printf("%s\n", tokens[i]);
+	}
+	*/
 
 	// 트리 생성
 	idx = 0;

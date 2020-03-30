@@ -14,6 +14,15 @@ char questionList[120][10];
 char idList[10][10];
 int wrongList[10][120];
 int wrongCountList[10];
+char wrongAnswers[20][50][10000];
+
+int getIndex(char* id) {
+	for (int i = 0; i < 10; i++) {
+		if (strcmp(idList[i], id) == 0)
+			return i;
+	}
+	return -1;
+}
 
 char *ltrim(char *s)
 {
@@ -34,8 +43,43 @@ char *trim(char *s)
     return rtrim(ltrim(s)); 
 }
 
-int main() {
-	char ansDirName[10] = "ANS_DIR";
+int comp(const void* left, const void *right) {
+	char tmp[30];
+	int bigNum1, bigNum2;
+	int smallNum1 = 0, smallNum2 = 0;
+
+	strcpy(tmp, left);
+	char* s = strchr(tmp, '-');
+	if (s != NULL) {
+		s = strtok(tmp, "-");
+		bigNum1 = atoi(s);
+		smallNum1 = atoi(strtok(NULL, "."));
+	} else {
+		bigNum1 = atoi(strtok(tmp, "."));
+	}
+
+	strcpy(tmp, right);
+	s = strchr(tmp, '-');
+	if (s != NULL) {
+		s = strtok(tmp, "-");
+		bigNum2 = atoi(s);
+		smallNum2 = atoi(strtok(NULL, "."));
+	} else {
+		bigNum2 = atoi(strtok(tmp, "."));
+	}
+
+	if (bigNum1 == bigNum2)
+		return smallNum1 - smallNum2;
+	return bigNum1 - bigNum2;
+}
+
+int main(int argc, char* argv[]) {
+	if (argc != 4) {
+		fprintf(stderr, "사용법 : %s <학생 답안 디렉토리> <정답 답안 디렉토리> <에러 디렉토리>\n", argv[0]);
+		return 0;
+	}
+
+	char* ansDirName = argv[2];
 	DIR* ansDir = opendir(ansDirName);
 	struct dirent* ansDirent;
 	int questionCount = 0;
@@ -47,12 +91,14 @@ int main() {
 		strcpy(questionList[questionCount++], ansDirent->d_name);
 	}
 
-	qsort(questionList, questionCount, sizeof(questionList[0]), strcmp);
+	qsort(questionList, questionCount, sizeof(questionList[0]), comp);
 
-	char stdDirName[10] = "STD_DIR2";
+	char* stdDirName = argv[1];
 	DIR* stdDir = opendir(stdDirName);
 	struct dirent* stdDirent;
 	int idCount = 0;
+
+	char* errorDirName = argv[3];
 
 	while ((stdDirent = readdir(stdDir)) != NULL) {
 		if (!strcmp(stdDirent->d_name, ".") || !strcmp(stdDirent->d_name, "..") || strncmp(stdDirent->d_name, "20", 2))
@@ -77,7 +123,26 @@ int main() {
 			sprintf(stdfname, "%s/%s/%s", stdDirName, idList[j], questionList[i]);
 			int stdFile = open(stdfname, O_RDONLY);
 			if (stdFile < 0) {
-				fprintf(stderr, "%s cannot open\n", stdfname);
+				sprintf(wrongAnswers[j][wrongCountList[j]], "============ %s =========\n", questionList[i]);
+				strcat(wrongAnswers[j][wrongCountList[j]], "학생 답이 없습니다.\n");
+
+				int errFile;
+				char errfname[50];
+				char qname[20];
+				char buffer3[5000];
+				memset(buffer3, 0, sizeof(buffer3));
+				memset(qname, 0, sizeof(qname));
+				strcpy(qname, strtok(questionList[i], "."));
+				questionList[i][strlen(questionList[i])] = '.';
+				sprintf(errfname, "%s/%s/%s_error.txt",errorDirName, idList[j], qname);
+				if ((errFile = open(errfname, O_RDONLY)) >= 0) {
+					read(errFile, buffer3, sizeof(buffer3));
+					strcat(wrongAnswers[j][wrongCountList[j]], "에러파일 : \n");
+					strcat(wrongAnswers[j][wrongCountList[j]], buffer3);
+					strcat(wrongAnswers[j][wrongCountList[j]], "\n");
+					close(errFile);
+				}
+
 				wrongList[j][wrongCountList[j]++] = i;
 				continue;
 			}
@@ -88,6 +153,12 @@ int main() {
 
 			char* s = strstr(buffer1, trim(buffer2));
 			if (s == NULL && strcmp(buffer1, trim(buffer2))) {
+				sprintf(wrongAnswers[j][wrongCountList[j]], "============ %s =========\n", questionList[i]);
+				strcat(wrongAnswers[j][wrongCountList[j]], "학생 답안 : ");
+				strcat(wrongAnswers[j][wrongCountList[j]], trim(buffer2));
+				strcat(wrongAnswers[j][wrongCountList[j]], "\n정답 답안 : ");
+				strcat(wrongAnswers[j][wrongCountList[j]], buffer1);
+				strcat(wrongAnswers[j][wrongCountList[j]], "\n");
 				wrongList[j][wrongCountList[j]++] = i;
 			} else if (s != NULL) {
 				if (s > buffer1) {
@@ -95,6 +166,12 @@ int main() {
 						if (*(s - k) == ':')
 							break;
 						if (*(s - k) != ' ' && *(s - k) != '\n' && *(s - k) != '\t') {
+							sprintf(wrongAnswers[j][wrongCountList[j]], "============ %s =========\n", questionList[i]);
+							strcat(wrongAnswers[j][wrongCountList[j]], "학생 답안 : ");
+							strcat(wrongAnswers[j][wrongCountList[j]], trim(buffer2));
+							strcat(wrongAnswers[j][wrongCountList[j]], "\n정답 답안 : ");
+							strcat(wrongAnswers[j][wrongCountList[j]], buffer1);
+							strcat(wrongAnswers[j][wrongCountList[j]], "\n");
 							wrongList[j][wrongCountList[j]++] = i;
 							break;
 						}
@@ -110,12 +187,39 @@ int main() {
 						break;
 
 					if (*s != ' ' && *s != '\n' && *s != '\t') {
+						sprintf(wrongAnswers[j][wrongCountList[j]], "============ %s =========\n", questionList[i]);
+						strcat(wrongAnswers[j][wrongCountList[j]], "학생 답안 : ");
+						strcat(wrongAnswers[j][wrongCountList[j]], trim(buffer2));
+						strcat(wrongAnswers[j][wrongCountList[j]], "\n정답 답안 : ");
+						strcat(wrongAnswers[j][wrongCountList[j]], buffer1);
+						strcat(wrongAnswers[j][wrongCountList[j]], "\n");
 						wrongList[j][wrongCountList[j]++] = i;
 						break;
 					}
 					s++;
 				}
+			} else {	
+				int errFile;
+				char errfname[50];
+				char qname[20];
+				char buffer3[5000];
+				memset(buffer3, 0, sizeof(buffer3));
+				memset(qname, 0, sizeof(qname));
+				strcpy(qname, strtok(questionList[i], "."));
+				questionList[i][strlen(questionList[i])] = '.';
+				sprintf(errfname, "%s/%s/%s_error.txt",errorDirName, idList[j], qname);
+				if ((errFile = open(errfname, O_RDONLY)) >= 0) {
+					read(errFile, buffer3, sizeof(buffer3));
+					sprintf(wrongAnswers[j][wrongCountList[j]], "============ %s =========\n", questionList[i]);
+					strcat(wrongAnswers[j][wrongCountList[j]], "에러파일 : ");
+					strcat(wrongAnswers[j][wrongCountList[j]], buffer3);
+					strcat(wrongAnswers[j][wrongCountList[j]], "\n");
+					wrongList[j][wrongCountList[j]++] = i;
+					close(errFile);
+				}
 			}
+
+
 
 			close(stdFile);
 		}
@@ -128,6 +232,26 @@ int main() {
 			printf("%s, ", questionList[wrongList[i][j]]);
 		}
 		printf("\n");
+	}
+
+
+
+	char id[20];
+	while (1) {
+		printf("학번 입력 : ");
+		scanf("%s", id);
+	
+		if (id[0] < '0' || id[0] > '9')
+			break;
+		int index = getIndex(id);
+		if (index == -1) {
+			printf("없는 학번\n");
+			continue;
+		}
+
+		for (int i = 0; i < wrongCountList[index]; i++) {
+			printf("%s\n", wrongAnswers[index][i]);
+		}
 	}
 	return 0;
 }
