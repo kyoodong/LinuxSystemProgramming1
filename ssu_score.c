@@ -106,6 +106,7 @@ void ssu_score(int argc, char *argv[])
 	
 	if (mOption)
 		ask_modification_of_question_score(saved_path);
+	
 	// 모든 학생의 학번을 알 수 있는 id_table 생성
 	set_idTable(stuDir);
 
@@ -124,8 +125,7 @@ void print_student_wrong_question(char* dirname) {
 	int size;
 	FILE* fp;
 	char buffer[BUFLEN];
-	int questionCount;
-	int questionIndex;
+	int questionCount = 0;
 	double score;
 	int wrongCount;
 	char wrongQuestions[QNUM][FILELEN];
@@ -456,12 +456,11 @@ void make_scoreTable(char *ansDir)
 	double score, bscore, pscore;
 	
 	// 답안 디렉토리를 다 읽어들이기위한 변수
-	struct dirent *dirp, *c_dirp;
-	DIR *dp, *c_dp;
+	struct dirent *dirp;
+	DIR *dp;
 	char tmp[BUFLEN];
 	int idx = 0;
 	int i;
-	int fd;
 
 	// 안내 메시지 출력
 	num = get_create_type();
@@ -498,7 +497,7 @@ void make_scoreTable(char *ansDir)
 		if((type = get_file_type(dirp->d_name)) < 0)
 			continue;
 
-		// .c 파일 / .txt 파일의 파일 명은 score_table 에 쌓아둠ㅁ
+		// .c 파일 / .txt 파일의 파일 명은 score_table 에 쌓아둠
 		strcpy(score_table[idx++].qname, dirp->d_name);
 	}
 
@@ -526,7 +525,6 @@ void make_scoreTable(char *ansDir)
 				score = pscore;
 		}
 		
-		// 이 2가 대체 뭔지 모르겠소
 		else if(num == 2)
 		{
 			printf("Input of %s: ", score_table[i].qname);
