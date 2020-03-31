@@ -146,6 +146,8 @@ void compare_tree(node *root1,  node *root2, int *result)
 
 		if(*result == true)
 		{
+			// 자신 바로 위의 연산자를 찾아서 형제노드들이 같은지 비교
+			// 연산자의 종류에 따라 피연산자(형제노드)의 순서가 바뀌어도 무관한 것들이 있기에 이를 처리하기 위함
 			tmp = get_operator(root1);
 	
 			// 이 연산자들은 피연산자 간의 순서가 바뀌어도 무관한 연산자들임
@@ -987,6 +989,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 				{
 					operator = get_most_high_precedence_node(cur, new);
 
+					// 괄호 depth 가 더 높으면 연산자 우선순위와 관계없이 무조건 먼저 처리되어야함
 					if(operator->parentheses > new->parentheses)
 						cur = insert_node(operator, new);
 
