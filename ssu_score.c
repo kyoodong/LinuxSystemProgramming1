@@ -812,7 +812,8 @@ int score_blank(char *id, char *filename)
 	fd_std = open(tmp, O_RDONLY);
 	
 	// strcpy 왜한거지??
-	// @TODO: get_answer s_answer 에 값을 잘 넣어주고 있어서 strcpy 는 필요 없어보임
+	// 넣으면 안됨. strcpy는 restrict 매개변수라서 두 포인터가 같은 메모리를 공유하면 에러남
+	// mac 에서 돌리면 바로 뻑나더라..
 	strcpy(s_answer, get_answer(fd_std, s_answer));
 
 	// 학생 답안이 빈 문자열이라면 바로 종료
@@ -1120,6 +1121,10 @@ int execute_program(char *id, char *filename)
 	fd = creat(std_fname, 0666);
 
 	// 학생 프로그램 실행
+	// & 가 그냥 붙은게 아님!
+	// system 함수는 blocking 함수라서 메인스레드에서 돌렸다가는 학생 프로그램이 무한루프에 빠져버리면 내 프로그램도 영원히 멈춰버림
+	// 따라서 실행 할 때 &를 붙여줌으로써 학생 프로그램은 백그라운드 스레드로 돌리고
+	// 이후 while 문을 통해 5초 타임아웃을 검사함
 	sprintf(tmp, "%s/%s/%s.stdexe &", stuDir, id, qname);
 	start = time(NULL);
 	redirection(tmp, fd, STDOUT);
