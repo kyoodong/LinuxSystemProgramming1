@@ -1021,6 +1021,7 @@ double compile_program(char *id, char *filename)
 	sprintf(tmp_e, "%s/%s/%s.stdexe", stuDir, id, qname);
 
 	// 스레드 생성과 관련된 문제의 경우 lpthread 옵션을 주어야함
+	// 이거도 우분투 관련 이슈임. 우분투는 lpthread 옵션을 안주면 컴파일 에러남
 	if(tOption && isthread)
 		sprintf(command, "gcc -o %s %s -lpthread", tmp_e, tmp_f);
 	else
@@ -1149,6 +1150,7 @@ int execute_program(char *id, char *filename)
 
 /**
  process id 를 구해주는 함수
+ 주로 학생 프로그램 프로세스가 아직 동작중인지 체크하는데 사용함
  @param name 실행 중인 프로그램 이름
  @return 0 process id 를 찾는데 실패함
 		 pid 성공
@@ -1164,6 +1166,10 @@ pid_t inBackground(char *name)
 	fd = open("background.txt", O_RDWR | O_CREAT | O_TRUNC, 0666);
 
 	// 프로세스 목록을 출력하되 문자열 name 을 포함한 라인만 출력
+	// 즉 방금 백그라운드로 실행된 학생 프로그램(name) 이 아직 실행 중이라면 그 pid 를 찾아 리턴
+	// 근데 Mac 에서는 grep %s 도 하나의 프로세스로 잡혀서 학생 프로그램이 종료되었음에도 불구하고
+	// | grep 22.stdexe 와 같이 grep 프로세스도 학생 프로그램의 프로세스라 인식되어 무조건 5초 초과하는 문제가 발생함
+	// @TODO: 맥북에서는 별도의 처리가 필요함
 	sprintf(command, "ps | grep %s", name);
 	redirection(command, fd, STDOUT);
 
@@ -1171,6 +1177,8 @@ pid_t inBackground(char *name)
 	read(fd, tmp, sizeof(tmp));
 
 	// 프로세스 목록에 아무것도 찍혀 나오지 않으면 파일을 지우고 return 0
+	// 우분투에서는 학생 프로그램 프로세스가 종료되면 이 부분에서 return 0되어 버리는데
+	// 맥북에서는 grep name 이 프로세스로 잡혀서 종료되지 않음
 	if(!strcmp(tmp, "")){
 		unlink("background.txt");
 		close(fd);

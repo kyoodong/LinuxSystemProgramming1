@@ -1312,6 +1312,11 @@ int get_sibling_cnt(node *cur)
 	return i;
 }
 
+/**
+ 트리를 메모리 할당해주는 함수
+ @param cur 트리의 루트 노드
+ 재귀적으로 타고 들어가면서 하위 노드들 또한 할당 해주는 함수이다.
+ */
 void free_node(node *cur)
 {
 	if(cur->child_head != NULL)
