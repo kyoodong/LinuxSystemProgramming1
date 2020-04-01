@@ -1242,7 +1242,7 @@ int compare_resultfile(char *file1, char *file2)
 }
 
 /**
- new fd에 old fd 연결, command 실행 후 다시 fd 원위치
+ new fd에 old fd 연결, system(command) 실행 후 다시 fd 원위치
  @param command 명령어
  @param new 새로운 fd
  @param old 기존의 fd
