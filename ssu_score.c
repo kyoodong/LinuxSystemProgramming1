@@ -214,6 +214,9 @@ int find_question_by_name(char* qname) {
 	return -1;
 }
 
+/**
+ 
+ */
 void ask_modification_of_question_score(char* dirname) {
 	char qname[FILELEN];
 	double newScore;
