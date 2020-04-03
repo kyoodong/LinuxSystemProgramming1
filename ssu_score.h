@@ -87,4 +87,7 @@ void ask_modification_of_question_score(char* dirname);
 void print_student_wrong_question(char* dirname);
 int is_exist_in_wrong_id_table(char* stdId);
 int is_exist(char (*src)[FILELEN], char *target);
+
+void check_verification_wrong_student_id();
+int is_exist_in_student_id(char* id); 
 #endif
