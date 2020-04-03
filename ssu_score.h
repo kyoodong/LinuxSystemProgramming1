@@ -86,7 +86,5 @@ int find_question_by_name(char* qname);
 void ask_modification_of_question_score(char* dirname);
 void print_student_wrong_question(char* dirname);
 int is_exist_in_wrong_id_table(char* stdId);
-int find_question_by_name(char* qname);
-void ask_modification_of_question_score(char* dirname);
 int is_exist(char (*src)[FILELEN], char *target);
 #endif
