@@ -34,7 +34,7 @@ int main(void)
     while (!feof(fp)) {  
         if ((res = fread(&tmp, sizeof(Person), 1, fp)) != 1) 
             break;
-        printf("%s %d %.2lf\n", tmp.name, (long)tmp.age, tmp.height);
+        printf("%s %d %.2lf\n", tmp.name, tmp.age, tmp.height);
     }
 
     rewind(fp);
@@ -43,7 +43,7 @@ int main(void)
     while (!feof(fp)) {  
         if ((res = fread(&tmp, sizeof(Person), 1, fp)) != 1)
             break;
-        printf("%s %d %.2lf\n", tmp.name, (long)tmp.age, tmp.height);
+        printf("%s %d %.2lf\n", tmp.name, tmp.age, tmp.height);
     }
 
     fclose(fp);
