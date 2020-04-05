@@ -156,13 +156,16 @@ void check_verification_wrong_student_id() {
 			break;
 		}
 
+		// 최대 입력 갯수 초과
 		if (count >= ARGNUM) {
 			printf("Maximum Number of Argument Exceeded. :: %s\n", wrong_id_table[i]);
 			wrong_id_table[i][0] = '\0';
 			continue;
 		}
 
+		// 학생 리스트에 없는 이상한 학번을 입력했는지 확인
 		if (!is_exist_in_student_id(wrong_id_table[i])) {
+			// 학생 리스트에 없다면 안내 후 삭제
 			printf("%s is not in student list\n", wrong_id_table[i]);
 			for (int j = i; j < size - 1; j++) {
 				if (wrong_id_table[j][0] == '\0')
@@ -192,8 +195,10 @@ void check_verification_thread_program_list() {
 			continue;
 		}
 
+		// 문제 리스트에 없는 문제 번호를 입력하진 않았는지 검사
 		int index = find_question_by_name(threadFiles[i]);
 		if (index < 0) {
+			// 없는 문제 번호를 입력했다면 안내 후 삭제
 			printf("[Thread option] %s is not found\n", threadFiles[i]);
 			for (int j = i; j < size - 1; j++) {
 				if (strlen(threadFiles[j]) == 0)
@@ -208,10 +213,6 @@ void check_verification_thread_program_list() {
 		count++;
 	}
 }
-
-
-
-
 
 /**
   지정된 학생들의 오답 리스트를 출력해주는 함수
@@ -239,6 +240,7 @@ void print_student_wrong_question(char* dirname) {
 		return;
 	}
 
+	// 문제의 갯수 확인
 	sprintf(fname, "%s/%s", dirname, "score_table.csv");
 	read_scoreTable(fname);
 	size = sizeof(score_table) / sizeof(score_table[0]);
@@ -256,6 +258,7 @@ void print_student_wrong_question(char* dirname) {
 	}
 
 	// id_table 이 비어있는 경우 id_table 을 구축하고, 잘못된 학생 정보를 입력했는지 확인
+	// 채점은 하지 않고, -i 옵션만 사용하여 학생의 오답목록을 보는 경우에 해당함
 	if (id_table[0][0] == '\0') {
 		fscanf(fp, "%s\n", buffer);
 		int t = 0;
