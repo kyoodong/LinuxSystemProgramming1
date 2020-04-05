@@ -104,11 +104,14 @@ void ssu_score(int argc, char *argv[])
 	// 점수 표 파일 생성
 	set_scoreTable(ansDir, saved_path);
 	
-	if (mOption)
-		ask_modification_of_question_score(saved_path);
-	
 	// 모든 학생의 학번을 알 수 있는 id_table 생성
 	set_idTable(stuDir);
+
+	// 없는 학생을 입력하지는 않았는지 확인
+	check_verification_wrong_student_id();
+
+	if (mOption)
+		ask_modification_of_question_score(saved_path);
 
 	printf("grading student's test papers..\n");
 	score_students();
@@ -120,8 +123,60 @@ void ssu_score(int argc, char *argv[])
 }
 
 /**
- 학생의 오답을 출력해주는 함수
- @param dirname score_table.csv, score.csv 파일이 있는 디렉토리 경로
+  id_table에 있는 학생인지 검사해주는 함수
+  @param id 검사될 학번
+  @return 1 : 있는 경우
+  	  0 : 없는 경우
+ */
+int is_exist_in_student_id(char* id) {
+	int size = sizeof(id_table) / sizeof(id_table[0]);
+	
+	for (int i = 0; i < size; i++) {
+		if (strlen(id_table[i]) == 0)
+			break;
+
+		if (!strcmp(id, id_table[i]))
+			return 1;
+	}
+	return 0;
+}
+
+/**
+  오답 출력 학생 중 잘못된 학생 정보를 입력하진 않았는지 확인해주는 함수
+*/
+void check_verification_wrong_student_id() {
+	int size = sizeof(wrong_id_table) / sizeof(wrong_id_table[0]);
+	int count = 0;
+
+	for (int i = 0; i < size; i++) {
+		if (wrong_id_table[i][0] == '\0') {
+			break;
+		}
+
+		if (count >= 5) {
+			printf("Maximum Number of Argument Exceeded. :: %s\n", wrong_id_table[i]);
+			wrong_id_table[i][0] = '\0';
+			continue;
+		}
+
+		if (!is_exist_in_student_id(wrong_id_table[i])) {
+			printf("%s is not in student list\n", wrong_id_table[i]);
+			for (int j = i; j < size; j++) {
+				if (wrong_id_table[j][0] == '\0')
+					break;
+				strcpy(wrong_id_table[j], wrong_id_table[j + 1]);
+			}
+			i--;
+		} else {
+			count++;
+		}
+	}
+}
+
+/**
+  지정된 학생들의 오답 리스트를 출력해주는 함수
+  @param dirname score_table.csv 파일이 있는 작업 디렉토리
+  -i 옵션으로 지정된 학생들의 오답 리스트 출력
  */
 void print_student_wrong_question(char* dirname) {
 	char scoreTableFileName[FILELEN];
@@ -135,7 +190,8 @@ void print_student_wrong_question(char* dirname) {
 	char wrongQuestions[QNUM][FILELEN];
 	char stdId[10];
 	char fname[FILELEN];
-	
+
+	// 문제의 원래 점수를 읽어내기 위한 파일 read
 	sprintf(scoreTableFileName, "%s/%s", dirname, "score_table.csv");
 	sprintf(studentScoreFileName, "%s/%s", dirname, "score.csv");
 	if (access(scoreTableFileName, F_OK | R_OK) < 0) {
@@ -153,18 +209,39 @@ void print_student_wrong_question(char* dirname) {
 		questionCount++;
 	}
 	
+	// 학생 파일을 읽어들임
 	if ((fp = fopen(studentScoreFileName, "r")) == NULL) {
 		fprintf(stderr, "Cannot read %s", studentScoreFileName);
 		return;
 	}
 
+	// id_table 이 비어있는 경우 id_table 을 구축하고, 잘못된 학생 정보를 입력했는지 확인
+	if (id_table[0][0] == '\0') {
+		fscanf(fp, "%s\n", buffer);
+		int t = 0;
+		while (!feof(fp)) {
+			memset(buffer, 0, sizeof(buffer));
+			fscanf(fp, "%[^,],", buffer);
+			strcpy(id_table[t], buffer);
+			t++;
+			fscanf(fp, "%s\n", buffer);
+		}
+
+		check_verification_wrong_student_id();
+	}
+
+	fseek(fp, 0, SEEK_SET);
 	fscanf(fp, "%s\n", buffer);
 	while (!feof(fp)) {
+		// 학번
 		fscanf(fp, "%[^,],", buffer);
+
+		// 오답 출력 학생 리스트에 있다면 학생 점수를 읽어들임
 		if (is_exist_in_wrong_id_table(buffer)) {
 			strcpy(stdId, buffer);
 			wrongCount = 0;
 			for (int j = 0; j < questionCount; j++) {
+				// 득한 점수가 원래 점수보다 작다면 틀린것이므로 오답 리스트에 추가
 				fscanf(fp, "%[^,],", buffer);
 				score = atof(buffer);
 				if (score_table[j].score != score) {
@@ -173,6 +250,7 @@ void print_student_wrong_question(char* dirname) {
 			}
 			fscanf(fp, "%s\n", buffer);
 
+			// 틀린 문제가 없으면 틀린 문제가 없다고 출력
 			if (wrongCount > 0) {
 				printf("%s's wrong answer :\n", stdId);
 				for (int j = 0; j < wrongCount - 1; j++) {
@@ -301,11 +379,8 @@ int check_option(int argc, char *argv[])
 				i = optind;
 				j = 0;
 				while (i < argc && argv[i][0] != '-') {
-					if (j >= ARGNUM) {
-						printf("Maximum Number of Argument Exceeded. :: %s\n", argv[i]);
-					} else {
-						strcpy(wrong_id_table[j], argv[i]);
-					}
+					strcpy(wrong_id_table[j], argv[i]);
+
 					j++;
 					i++;
 				}
