@@ -119,6 +119,10 @@ void ssu_score(int argc, char *argv[])
 	return;
 }
 
+/**
+ 학생의 오답을 출력해주는 함수
+ @param dirname score_table.csv, score.csv 파일이 있는 디렉토리 경로
+ */
 void print_student_wrong_question(char* dirname) {
 	char scoreTableFileName[FILELEN];
 	char studentScoreFileName[FILELEN];
@@ -184,9 +188,18 @@ void print_student_wrong_question(char* dirname) {
 	}
 }
 
+/**
+ 입력 받은 학번이 오답 출력 학생 리스트에 있는지 확인해주는 함수
+ @param stdId 학번
+ @return 1 : 오답 출력 학생 리스트에 있는 경우
+		 0 : 없는 경우
+ */
 int is_exist_in_wrong_id_table(char* stdId) {
 	int size = sizeof(wrong_id_table) / sizeof(wrong_id_table[0]);
 	for (int i = 0; i < size; i++) {
+		if (strlen(wrong_id_table[i]) == 0)
+			break;
+		
 		if (!strcmp(stdId, wrong_id_table[i])) {
 			return true;
 		}
@@ -194,12 +207,18 @@ int is_exist_in_wrong_id_table(char* stdId) {
 	return false;
 }
 
+/**
+ 문제 이름으로 score_table 내에서 해당 문제의 index를 찾아주는 함수
+ @param qname 문제 이름 예) 1-1
+ @return n : 해당 문제가 존재하는 경우
+		 -1 : 해당 문제가 존재하지 않는 경우
+ */
 int find_question_by_name(char* qname) {
 	char* index;
 	char name[10];
 	int size = sizeof(score_table) / sizeof(score_table[0]);
 	for (int i = 0; i < size; i++) {
-		if (strlen(score_table[i].qname) == 0)
+		if (score_table[i].score == 0)
 			return -1;
 
 		strcpy(name, score_table[i].qname);
@@ -215,7 +234,8 @@ int find_question_by_name(char* qname) {
 }
 
 /**
- 
+ 배점을 변경할지 물어보는 함수
+ 물어보고 선택된 점수의 배점을 변경해준다.
  */
 void ask_modification_of_question_score(char* dirname) {
 	char qname[FILELEN];
@@ -224,24 +244,31 @@ void ask_modification_of_question_score(char* dirname) {
 	char fname[FILELEN];
 
 	while (true) {
+		// 수정할 점수 입력
 		printf("Input question's number to modify >> ");
 		scanf("%s", qname);
 		
+		// no 입력 시 종료
 		if (!strcmp(qname, "no")) {
 			break;
 		}
 
+		// 문제 인덱스 추출
 		int index = find_question_by_name(qname);
 		if (index == -1) {
-			printf("%s is not found!\n", qname);
+			printf("%s not exist!\n", qname);
 			continue;
 		}
+		
+		// 새 배점 입력 후 수정
 		printf("Current score : %lf\n", score_table[index].score);
 		printf("New score : ");
 		scanf("%lf", &newScore);
 		score_table[index].score = newScore;
 		count++;
 	}
+	
+	// 수정된 점수가 있으면 파일에 적용
 	if (count > 0) {
 		sprintf(fname, "%s/%s", dirname, "score_table.csv");
 		write_scoreTable(fname);
