@@ -89,5 +89,6 @@ int is_exist_in_wrong_id_table(char* stdId);
 int is_exist(char (*src)[FILELEN], char *target);
 
 void check_verification_wrong_student_id();
+void check_verification_thread_program_list();
 int is_exist_in_student_id(char* id); 
 #endif

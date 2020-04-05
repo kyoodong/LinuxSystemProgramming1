@@ -30,7 +30,7 @@ char ansDir[BUFLEN];
 char errorDir[BUFLEN];
 
 // 스레드가 필요한 소스 파일 리스트
-char threadFiles[ARGNUM][FILELEN];
+char threadFiles[QNUM][FILELEN];
 
 
 char cIDs[ARGNUM][FILELEN];
@@ -110,6 +110,9 @@ void ssu_score(int argc, char *argv[])
 	// 없는 학생을 입력하지는 않았는지 확인
 	check_verification_wrong_student_id();
 
+	// 없는 문제를 입력하진 않았는지 확인
+	check_verification_thread_program_list();
+
 	if (mOption)
 		ask_modification_of_question_score(saved_path);
 
@@ -153,7 +156,7 @@ void check_verification_wrong_student_id() {
 			break;
 		}
 
-		if (count >= 5) {
+		if (count >= ARGNUM) {
 			printf("Maximum Number of Argument Exceeded. :: %s\n", wrong_id_table[i]);
 			wrong_id_table[i][0] = '\0';
 			continue;
@@ -161,7 +164,7 @@ void check_verification_wrong_student_id() {
 
 		if (!is_exist_in_student_id(wrong_id_table[i])) {
 			printf("%s is not in student list\n", wrong_id_table[i]);
-			for (int j = i; j < size; j++) {
+			for (int j = i; j < size - 1; j++) {
 				if (wrong_id_table[j][0] == '\0')
 					break;
 				strcpy(wrong_id_table[j], wrong_id_table[j + 1]);
@@ -172,6 +175,43 @@ void check_verification_wrong_student_id() {
 		}
 	}
 }
+
+/**
+  스레드 프로그램으로 지정한 프로그램들이 정말 있는 문제들인지 확인해주는 함수
+  */
+void check_verification_thread_program_list() {
+	int size = sizeof(threadFiles) / sizeof(threadFiles[0]);
+	int count = 0;
+
+	for (int i = 0; i < size; i++) {
+		if (strlen(threadFiles[i]) == 0)
+			break;
+		
+		if (count >= ARGNUM) {
+			printf("Maximum Number of Argument Exceeded. :: %s\n", threadFiles[i]);
+			continue;
+		}
+
+		int index = find_question_by_name(threadFiles[i]);
+		if (index < 0) {
+			printf("[Thread option] %s is not found\n", threadFiles[i]);
+			for (int j = i; j < size - 1; j++) {
+				if (strlen(threadFiles[j]) == 0)
+					break;
+
+				strcpy(threadFiles[j], threadFiles[j + 1]);
+			}
+			i--;
+			continue;
+		}
+
+		count++;
+	}
+}
+
+
+
+
 
 /**
   지정된 학생들의 오답 리스트를 출력해주는 함수
@@ -408,10 +448,7 @@ int check_option(int argc, char *argv[])
 				// 스레드 관련 문제의 경우 미리 문제 번호를 threadFiles에 저장해둠
 				while(i < argc && argv[i][0] != '-'){
 					// ARGNUM개 문제 지정 가능
-					if(j >= ARGNUM)
-						printf("Maximum Number of Argument Exceeded.  :: %s\n", argv[i]);
-					else
-						strcpy(threadFiles[j], argv[i]);
+					strcpy(threadFiles[j], argv[i]);
 					i++; 
 					j++;
 				}
