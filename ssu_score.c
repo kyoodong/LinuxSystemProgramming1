@@ -637,7 +637,7 @@ void make_scoreTable(char *ansDir)
 			continue;
 
 		if (count == QNUM) {
-			printf("It can score up to %d questions.\n", QNUM);
+			printf("[Warning] :: It can score up to %d questions.\n", QNUM);
 			break;
 		}
 		sprintf(tmp, "%s/%s", ansDir, dirp->d_name);
@@ -744,6 +744,11 @@ void set_idTable(char *stuDir)
 	while((dirp = readdir(dp)) != NULL){
 		if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, ".."))
 			continue;
+
+		if (num == SNUM) {
+			printf("[Warning] :: It can score up to %d students.\n", SNUM);
+			break;
+		}
 
 		sprintf(tmp, "%s/%s", stuDir, dirp->d_name);
 		
