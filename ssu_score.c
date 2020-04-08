@@ -287,7 +287,7 @@ void print_student_wrong_question(char* dirname) {
 				// 득한 점수가 원래 점수보다 작다면 틀린것이므로 오답 리스트에 추가
 				fscanf(fp, "%[^,],", buffer);
 				score = atof(buffer);
-				if (score_table[j].score != score) {
+				if (score == 0) {
 					strcpy(wrongQuestions[wrongCount++], score_table[j].qname);
 				}
 			}
