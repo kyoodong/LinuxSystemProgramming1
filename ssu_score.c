@@ -606,6 +606,7 @@ void make_scoreTable(char *ansDir)
 	char tmp[BUFLEN];
 	int idx = 0;
 	int i;
+	int count = 0;
 
 	// 안내 메시지 출력
 	num = get_create_type();
@@ -635,6 +636,10 @@ void make_scoreTable(char *ansDir)
 		if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, ".."))
 			continue;
 
+		if (count == QNUM) {
+			printf("It can score up to %d questions.\n", QNUM);
+			break;
+		}
 		sprintf(tmp, "%s/%s", ansDir, dirp->d_name);
 
 		// type = C 파일인지 txt 파일인지 체크
@@ -644,6 +649,7 @@ void make_scoreTable(char *ansDir)
 
 		// .c 파일 / .txt 파일의 파일 명은 score_table 에 쌓아둠
 		strcpy(score_table[idx++].qname, dirp->d_name);
+		count++;
 	}
 
 	closedir(dp);
@@ -1093,7 +1099,6 @@ int score_blank(char *id, char * const filename)
 
 	// 토큰 쪼개기
 	if(!make_tokens(s_answer, tokens)){
-		fprintf(stderr, "토큰 쪼개기 실패\n");
 		close(fd_std);
 		return false;
 	}
