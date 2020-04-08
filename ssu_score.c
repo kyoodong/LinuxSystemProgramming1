@@ -1272,7 +1272,7 @@ double compile_program(char *id, char *filename)
 		sprintf(command, "gcc -o %s %s", tmp_e, tmp_f);
 
 	// 에러 출력 파일 세팅
-	sprintf(tmp_e, "%s/%s/%s_error.txt", ansDir, qname, qname);
+	sprintf(tmp_e, "%s/%s_error.txt", ansDir, qname);
 	fd = creat(tmp_e, 0666);
 
 	// 명령어 실행 (이 동안은 fd가 표준 에러 파일이 됨)
