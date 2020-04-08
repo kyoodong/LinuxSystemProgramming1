@@ -2,3 +2,4 @@
 *.exe
 *.stdout
 *.csv
+*error.txt

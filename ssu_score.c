@@ -382,7 +382,7 @@ void ask_modification_of_question_score(char* dirname) {
 		}
 		
 		// 새 배점 입력 후 수정
-		printf("Current score : %lf\n", score_table[index].score);
+		printf("Current score : %.2lf\n", score_table[index].score);
 		printf("New score : ");
 		scanf("%lf", &newScore);
 		score_table[index].score = newScore;
