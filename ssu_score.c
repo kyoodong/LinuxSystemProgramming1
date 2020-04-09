@@ -1064,7 +1064,6 @@ double compile_program(char *id, char *filename)
  @param filename 에러 로그 파일
  @return ERROR : 에러가 하나라도 있는 경우
 		 n : warning의 갯수
- @TODO: 왜 리턴이 double인가
  */
 double check_error_warning(char *filename)
 {
