@@ -236,7 +236,7 @@ void print_student_wrong_question(char* dirname) {
 	sprintf(scoreTableFileName, "%s/%s", dirname, "score_table.csv");
 	sprintf(studentScoreFileName, "%s/%s", dirname, "score.csv");
 	if (access(scoreTableFileName, F_OK | R_OK) < 0) {
-		fprintf(stderr, "Cannot read %s", scoreTableFileName);
+		fprintf(stderr, "Cannot read %s\n", scoreTableFileName);
 		return;
 	}
 
@@ -253,7 +253,7 @@ void print_student_wrong_question(char* dirname) {
 	
 	// 학생 파일을 읽어들임
 	if ((fp = fopen(studentScoreFileName, "r")) == NULL) {
-		fprintf(stderr, "Cannot read %s", studentScoreFileName);
+		fprintf(stderr, "Cannot read %s\n", studentScoreFileName);
 		return;
 	}
 
@@ -860,7 +860,7 @@ int get_create_type()
 
 	while(1)
 	{
-		printf("score_table.csv file doesn't exist in TREUDIR!\n");
+		printf("score_table.csv file doesn't exist!\n");
 		printf("1. input blank question and program question's score. ex) 0.5 1\n");
 		printf("2. input all question's score. ex) Input value of 1-1: 0.1\n");
 		printf("select type >> ");
