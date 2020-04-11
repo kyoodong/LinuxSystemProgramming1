@@ -1404,7 +1404,8 @@ int execute_program(char *id, char *filename)
 	fd = creat(std_fname, 0666);
 
 	// 학생 프로그램 실행
-	// @TODO &는 왜있는거지
+	// & 를 맨 뒤에 붙여줘서 학생 프로그램이 백그라운드로 실행되고
+	// 이후에 5초 검사를 해줌
 	sprintf(tmp, "%s/%s/%s.stdexe &", stuDir, id, qname);
 	start = time(NULL);
 	redirection(tmp, fd, STDOUT);
