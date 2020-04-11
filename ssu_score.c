@@ -18,7 +18,7 @@ struct ssu_scoreTable score_table[QNUM];
 
 // 학생들의 학번 표
 char id_table[SNUM][10];
-char wrong_id_table[SNUM][10];
+char wrong_id_table[ARGNUM][10];
 
 // 학생 답안 디렉토리 path
 char stuDir[BUFLEN];
@@ -30,7 +30,7 @@ char ansDir[BUFLEN];
 char errorDir[BUFLEN];
 
 // 스레드가 필요한 소스 파일 리스트
-char threadFiles[QNUM][FILELEN];
+char threadFiles[ARGNUM][FILELEN];
 
 
 char cIDs[ARGNUM][FILELEN];
@@ -149,18 +149,10 @@ int is_exist_in_student_id(char* id) {
 */
 void check_verification_wrong_student_id() {
 	int size = sizeof(wrong_id_table) / sizeof(wrong_id_table[0]);
-	int count = 0;
 
 	for (int i = 0; i < size; i++) {
 		if (wrong_id_table[i][0] == '\0') {
 			break;
-		}
-
-		// 최대 입력 갯수 초과
-		if (count >= ARGNUM) {
-			printf("Maximum Number of Argument Exceeded. :: %s\n", wrong_id_table[i]);
-			wrong_id_table[i][0] = '\0';
-			continue;
 		}
 
 		// 학생 리스트에 없는 이상한 학번을 입력했는지 확인
@@ -173,8 +165,6 @@ void check_verification_wrong_student_id() {
 				strcpy(wrong_id_table[j], wrong_id_table[j + 1]);
 			}
 			i--;
-		} else {
-			count++;
 		}
 	}
 }
@@ -184,17 +174,11 @@ void check_verification_wrong_student_id() {
   */
 void check_verification_thread_program_list() {
 	int size = sizeof(threadFiles) / sizeof(threadFiles[0]);
-	int count = 0;
 
 	for (int i = 0; i < size; i++) {
 		if (strlen(threadFiles[i]) == 0)
 			break;
 		
-		if (count >= ARGNUM) {
-			printf("Maximum Number of Argument Exceeded. :: %s\n", threadFiles[i]);
-			continue;
-		}
-
 		// 문제 리스트에 없는 문제 번호를 입력하진 않았는지 검사
 		int index = find_question_by_name(threadFiles[i]);
 		if (index < 0) {
@@ -209,8 +193,6 @@ void check_verification_thread_program_list() {
 			i--;
 			continue;
 		}
-
-		count++;
 	}
 }
 
@@ -422,7 +404,10 @@ int check_option(int argc, char *argv[])
 				i = optind;
 				j = 0;
 				while (i < argc && argv[i][0] != '-') {
-					strcpy(wrong_id_table[j], argv[i]);
+					if (j < ARGNUM)
+						strcpy(wrong_id_table[j], argv[i]);
+					else
+						printf("Maximum Number of Argument Exceeded. :: %s\n", argv[i]);
 
 					j++;
 					i++;
@@ -451,7 +436,11 @@ int check_option(int argc, char *argv[])
 				// 스레드 관련 문제의 경우 미리 문제 번호를 threadFiles에 저장해둠
 				while(i < argc && argv[i][0] != '-'){
 					// ARGNUM개 문제 지정 가능
-					strcpy(threadFiles[j], argv[i]);
+					if (j < ARGNUM)
+						strcpy(threadFiles[j], argv[i]);
+					else
+						printf("Maximum Number of Argument Exceeded. :: %s\n", argv[i]);
+
 					i++; 
 					j++;
 				}
