@@ -1,4 +1,0 @@
-/home/wind.dong.dream/lsp/LinuxSystemProgramming1/STD_DIR/20200001/21.c: In function ‘main’:
-/home/wind.dong.dream/lsp/LinuxSystemProgramming1/STD_DIR/20200001/21.c:50:5: warning: implicit declaration of function ‘sleep’ [-Wimplicit-function-declaration]
-     sleep(5);
-     ^~~~~
